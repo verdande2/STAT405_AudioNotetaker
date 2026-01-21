@@ -4,7 +4,7 @@ While overloading documentation is a negative in general, not enough documentati
 # Task Delegation
  * Audio/Speech-To-Text - Sparkes
  * Database - how to store records - Matthew
- * LLM Model - how to summarize
+ * LLM Model - how to summarize - James
  * GUI design - how to retrieve records - Hailey
  * Float/glue - help where needed, keep group together and on task - Minh
 
