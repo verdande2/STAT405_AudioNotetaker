@@ -1,30 +1,66 @@
 # Project Management - 5 Week Plan and Task Delegation 
 While overloading documentation is a negative in general, not enough documentation is just as bad. You will have 5 weeks from now to do the project which means, you need to create a timeline of what needs done, and who's going to do it. Make a quick list of tasks that need done, identify who is going to do them, and submit it. (Read the post from the project management institute about agile documentation (https://www.pmi.org/disciplined-agile/agile/documentation).)
 
-# Task Delegation
+# Task Area Delegation
  * Audio/Speech-To-Text - Sparkes
  * Database - how to store records - Matthew
  * LLM Model - how to summarize - James
  * GUI design - how to retrieve records - Hailey
  * Float/glue - help where needed, keep group together and on task - Minh
 
+# Task List
+ * One NFR (nonfunctional requirement) per group member
+ * 
+
 # 5 Week Plan
-General Overview here.
+Minimum viable product:
+ * Program to convert mp4 raw audio -> transcription -> translation -> store data record -> summarizer -> output summary & transcript + gui record retrieval system
+ * => Sparkes' domain (audio/speech-to-text):
+ *     Input: raw mp4 audio file of a patient/therapist session, possibly in non-English
+ *     Processes: language detection, speaker identification (diarization), audio transcription (speech-to-text), text translation to US English
+ *     Output: raw text output file of speaker-identified, English text transcription of session
+ * => James' domain (summarize the transcript):
+ *     Input: raw text output file of speaker-identified, English text transcription of session
+ *     Processes: data cleaning/processing (strip unneccessary whitespace, possibly speaker labels, etc), summarize transcript into summary text
+ *     Output: raw text summary of transcript
+ * => Matthew's domain (database/storing the data):
+ *     Input: raw text transcript, raw text summary of transcript, metadata
+ *     Processes: data cleaning/standardizing?, local vector storage
+ *     Output: N/A - record is stored for later retrieval in raw text format
+ * => Hailey's domain (GUI/front end/data retrieval):
+ *     Input: existing datastore of record information, user interaction to choose action:
+ *       create new patient (create)
+ *       view patient record (read)
+ *       add session transcript to existing patient (update)
+ *       edit patient metadata (update)
+ *       delete patient (delete)
+ *       delete patient session (delete)
+ *     Processes: GUI design (CRUD system more or less), detailed list display, pagination?, search/sort/filter results?
+ *     Output: Display the patient's record data on the screen
+ * => unassigned goals
+ *   how to identify/gather metadata (therapist, client ID, datetime, location/provider, etc) and how/where to display metadata
+ * => Minh's domain (float):
+ *   Documentation? User Manual? User Experience? Quality Control/Assurance?
 
 ## Week 1 (1/21/2026 - 1/27/2026):  
- * Stuff here
+ * Full tech stack setup on all group members machine
+ * Tech stack setup in terms of what tool is where in the workflow
+ * SQLite? - may not be suitable
+ * Python
+ * Research: DB solutions for storing vector information
+ * Design sketches - program flow chart, general design structure
 
 ## Week 2 (1/28/2026 - 2/3/2026):  
- * Stuff here
+ * Do work
 
 ## Week 3 (2/4/2026 - 2/10/2026):  
- * Stuff here
+ * Moar work
 
 ## Week 4 (2/11/2026 - 2/17/2026): 
- * Stuff here
+ * Testing
 
 ## Week 5 (2/18/2026 - 2/24/2026):  
- * Stuff here
+ * Functional Prototype working
 
 
 
@@ -53,3 +89,20 @@ This assignment is just the participation grade for the in class portion and all
 ## Definitions
 
 
+
+# Agile Documentation Strategies (from https://www.pmi.org/disciplined-agile/agile/documentation)
+
+An important part of our solution is deliverable documentation, the kind of documentation needed by our stakeholders to work with, operate, and sustain the solution. This may include system overview documentation, user guides/help, training manuals, and operations guidelines, etc. There are several agile documentation strategies to keep in mind:
+ * Invest in **quality** over documentation. The better designed our solution is, the easier it will be for stakeholders to understand it, and therefore generally less documentation will be required.
+ * Write documentation that is **just barely good enough** (JBGE). When we do create documentation it should be JBGE﻿, or just barely sufficient, to fulfill the needs of our stakeholders and no more. Any investment in an artifact to make it more than good enough is a waste, and sufficiency is determined by the customer of the document, not the producer. Keep your documentation **concise**.
+ * Document **stable concepts**, not speculative ideas. Speculative ideas, such as **requirements**, are likely to evolve over time. This in turn requires you to update your documentation. Whenever possible, wait until the material that you are describing is stable before you capture it in documentation.
+ * Find better ways to **communicate**. If the purpose of a document is to communicate information to others, it is important to recognize that detailed documentation is one of the least effective means to accomplish that purpose. You have other communication options available to you to choose from.
+ * Recognize that you need **some documentation**. A common, and unfortunately enduring, misunderstanding about agile is that agile teams don’t write documentation. Nothing could be further from the truth, and there is a wealth of information about agile/lean documentation strategies﻿ available to you that are leveraged within the Disciplined Agile (DA) tool kit.
+ * **Work** closely **with** stakeholders. The only way we can write effective documentation is if we know **what** our stakeholders need and **how** they will work with the documentation that we produce. Effective documents tend to be single purpose and targeted at a specific audience. Figure 1 summarizes the **CRUFT** formula for calculating the effectiveness of a document as a percentage, and please note that 4 of the 5 factors rely on the customer of the document.
+ * Effectiveness of a document = **C*R*U*F*T**
+Where:
+**C** = The percentage of content that is **correct**
+**R** = The chance the document will be **read**
+**U** = The chance that the content will be **understood**
+**F** = The chance that the advice will be **followed**
+**T** = The chance that the advice will be **trusted**
