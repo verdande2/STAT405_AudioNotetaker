@@ -117,6 +117,14 @@ The major functions of the system include:
 * Stretch Goal: A requirement (e.g., automated paperwork filling) desirable for future releases but not critical for the Minimum Viable Product (MVP).
 
 
+## Non Functional Requirements
+* Access Security: Not being able to connect to the internet for security reasons. -Minh
+* Usability: Our application should be intuitive and easy to use. -Matthew
+* Efficiency: How quickly should we be able to create a transcription and notes? - James
+* Installability: How should this be put on their machines and ran? - Sparkes
+* Confidentiality: Using HIPPA protected data and making sure things are secure. - Hailey
+
+
 # Agile Documentation Strategies (from https://www.pmi.org/disciplined-agile/agile/documentation)
 
 An important part of our solution is deliverable documentation, the kind of documentation needed by our stakeholders to work with, operate, and sustain the solution. This may include system overview documentation, user guides/help, training manuals, and operations guidelines, etc. There are several agile documentation strategies to keep in mind:
