@@ -73,21 +73,48 @@ This assignment is just the participation grade for the in class portion and all
 # Introduction
 
 ## Purpose
+The purpose of this Software Requirements Specification (SRS) is to define the requirements for a local, desktop-based transcription and assessment summarization tool designed for psychologists. The system aims to modernize the current workflow of handwritten notes by automating the transcription of client sessions and generating behavioral summaries. This tool is specifically designed to function within high-security environments (e.g., prisons, facilities for at-risk youth) where data privacy regulations strictly prohibit cloud-based storage or external data transmission.
 
 ## Scope
+The software will be a standalone desktop application capable of ingesting audio recordings (specifically MP4 format) from external recording devices. The system will perform the following core activities:
+
+* __Local Processing__: Perform offline speech-to-text transcription and natural language summarization without internet connectivity.
+* __Multilingual Support__: Transcribe English and Spanish audio inputs, ensuring all output documentation (transcripts and summaries) is generated in English.
+* __Patient Management__: Allow psychologists to associate recordings with specific client profiles to track historical trends, behavioral themes, and treatment continuity.
+* __Administrative Auditing__: Provide local querying capabilities for administrators to audit records and locate notes.
+
+__Out of Scope__:
+* Cloud storage or synchronization features.
+* Generation of official treatment plans (slated for future "stretch" development).
+* Mobile application interfaces.
 
 ## Product Overview
 
 ### Product Perspective
+This system is a self-contained software product that operates independently on the user's local machine. It replaces a manual workflow involving handwritten notes and unorganized audio files. The system must operate within a heterogeneous hardware environment, supporting macOS, Windows, and Linux operating systems. [Recommended: Insert a Context Diagram here showing the User, the Laptop, the Audio Recorder, and the boundary line indicating no internet connection.]
 
 ### Product Functions
+The major functions of the system include:
+1. Audio Ingestion: Secure upload of audio files from MP4 recording devices.
+2. Automated Transcription: Conversion of speech to text (English/Spanish source to English output).
+3. Intelligent Summarization: Auto-generation of assessment notes and extraction of key historical themes.
+4. Longitudinal Tracking: Visualization or reporting of client behavioral trends over multiple sessions.
+5. Audit & Search: A query interface for retrieving specific notes or client history for administrative review.
 
 ### User Characteristics
+* Primary User (Psychologist): Non-technical subject matter experts. They require an intuitive interface that minimizes technical friction, allowing them to focus on patient analysis rather than software configuration. They often work with translators.
+
+* Secondary User (Administrator): Responsible for compliance and auditing. They require tools to search and verify records without necessarily altering patient data.
 
 ### Limitations
+* Hardware constraints: The system is limited by the storage capacity and processing power of the host laptop, as offloading processing to the cloud is prohibited.
+* Data Sovereignty: No data may leave the local machine; all backups and history must be managed locally.
+* Audio Quality: The accuracy of the model is dependent on the quality of the input recording, which may vary in high-stress environments.
 
 ## Definitions
-
+* Local Processing: The execution of software commands and data storage strictly on the computer's hard drive, without utilization of remote servers or cloud computing.
+* Transliteration vs. Translation: In this context, the system must translate Spanish audio directly into English text transcripts.
+* Stretch Goal: A requirement (e.g., automated paperwork filling) desirable for future releases but not critical for the Minimum Viable Product (MVP).
 
 
 # Agile Documentation Strategies (from https://www.pmi.org/disciplined-agile/agile/documentation)
