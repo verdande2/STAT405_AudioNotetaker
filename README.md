@@ -51,16 +51,25 @@ Minimum viable product:
  * Design sketches - program flow chart, general design structure
 
 ## Week 2 (1/28/2026 - 2/3/2026):  
- * Do work
+ * Basic audio ingestion pipeline
+ * Speech-to-text prototype
+ * GUI skeleton:
 
 ## Week 3 (2/4/2026 - 2/10/2026):  
- * Moar work
+ * Implement summarization pipeline
+ * Clean and normalize transcript text
+ * Generate summary output
+ * Store transcripts and summaries
+ * Implement CRUD operations
 
 ## Week 4 (2/11/2026 - 2/17/2026): 
- * Testing
+ * QA Testing
+ * Edge case testing
 
 ## Week 5 (2/18/2026 - 2/24/2026):  
  * Functional Prototype working
+ * Cleanup
+ * Bug Fixes
 
 
 
