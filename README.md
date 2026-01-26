@@ -116,14 +116,31 @@ The major functions of the system include:
 * Secondary User (Administrator): Responsible for compliance and auditing. They require tools to search and verify records without necessarily altering patient data.
 
 ### Limitations
-* Hardware constraints: The system is limited by the storage capacity and processing power of the host laptop, as offloading processing to the cloud is prohibited.
-* Data Sovereignty: No data may leave the local machine; all backups and history must be managed locally.
-* Audio Quality: The accuracy of the model is dependent on the quality of the input recording, which may vary in high-stress environments.
+* Performance & Hardware constraints:
+*   The system is limited by the storage capacity and processing power of the host laptop, as offloading processing to the cloud is prohibited.
+*   The system's performance will be constrained by the hardware running it, namely CPU and presence of a dedicated Nvidia GPU.
+*   The processing time need not be real-time, but a 1:1 (or better) input audio duration:processing duration would be ideal.
+* Data Sovereignty:
+*   No data may leave the local machine; all backups and history must be managed locally.
+*   The system must be installed via an external drive (USB drive, etc) and no data may leave the local machine.
+*   The local machine will not have internet access.
+* Audio Quality:
+*   The accuracy of the model is dependent on the quality of the input recording, which may vary in high-stress environments.
+* Localization:
+*   The system will be designed to digest multilingual audio files in mp4 format.
+*   The graphical user interface will be designed in US English.
+*   The system documentation will be in US English.
+*   All data to be stored in the system will be standardized to US English.
+* Usability:
+*   The system will be able to be installed by a non-administrator user account.
+*   The system should not require any additional installations such as runtime or third party external libraries to be installed.
+
 
 ## Definitions
 * Local Processing: The execution of software commands and data storage strictly on the computer's hard drive, without utilization of remote servers or cloud computing.
 * Transliteration vs. Translation: In this context, the system must translate Spanish audio directly into English text transcripts.
 * Stretch Goal: A requirement (e.g., automated paperwork filling) desirable for future releases but not critical for the Minimum Viable Product (MVP).
+* CPU vs GPU processing: Central Processing Unit (CPU) processing is achievable on all user devices, but the ideal is utilizing a dedicated Graphics Processing Unit (GPU) from Nvidia. A GPU will increase performance significantly.
 
 
 ## Non Functional Requirements
@@ -131,7 +148,15 @@ The major functions of the system include:
 * Usability: Our application should be intuitive and easy to use. -Matthew
 * Efficiency: How quickly should we be able to create a transcription and notes? - James
 * Installability: How should this be put on their machines and ran? - Sparkes
-* Confidentiality: Using HIPPA protected data and making sure things are secure. - Hailey
+*   **NFR-001**: System Installability 
+*    The system shall be installable by a **layman user** or **technician** in no more than 15 minutes.
+*    The system shall **train/guide** the user through basic functionality requiring no more than 15 minutes.
+*    The system should indicate its **state** to the user in a **clear** and **concise** way at all times.
+*    The system should be able to gracefully **handle** common **errors,** and output **human-readable error messages** if unable.
+*    The system should be easily installable.
+*    The system should **leave no traces** (except for the data store, as per user choice) on the local device after uninstallation.
+*    The system will be designed as a **fully featured single deployable version**, with **no planned updates** or maintainence schedule planned. 
+* Confidentiality: Using HIPAA protected data and making sure things are secure. - Hailey
 
 
 # Agile Documentation Strategies (from https://www.pmi.org/disciplined-agile/agile/documentation)
