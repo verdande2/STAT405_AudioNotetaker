@@ -1,4 +1,4 @@
-# Project Management - 5 Week Plan and Task Delegation 
+<img width="6057" height="1817" alt="Flow" src="https://github.com/user-attachments/assets/669bfe68-0352-4e77-84f7-2994a54a599f" /># Project Management - 5 Week Plan and Task Delegation 
 While overloading documentation is a negative in general, not enough documentation is just as bad. You will have 5 weeks from now to do the project which means, you need to create a timeline of what needs done, and who's going to do it. Make a quick list of tasks that need done, identify who is going to do them, and submit it. (Read the post from the project management institute about agile documentation (https://www.pmi.org/disciplined-agile/agile/documentation).)
 
 # Task Area Delegation
@@ -100,15 +100,37 @@ __Out of Scope__:
 ## Product Overview
 
 ### Product Perspective
-This system is a self-contained software product that operates independently on the user's local machine. It replaces a manual workflow involving handwritten notes and unorganized audio files. The system must operate within a heterogeneous hardware environment, supporting macOS, Windows, and Linux operating systems. [Recommended: Insert a Context Diagram here showing the User, the Laptop, the Audio Recorder, and the boundary line indicating no internet connection.]
+This system is a self-contained software product that operates independently on the user's local machine. It replaces a manual workflow involving handwritten notes and unorganized audio files.
+
+The system operates entirely offline and does not depend on cloud services, external APIs, or internet connectivity. All data processing and storage occur locally within the workstation.
+
+The application integrates with external audio recording devices that generate MP4 files. These devices are not controlled by the system; audio files are transferred manually via secure physical media such as USB drives.
+
+Internally, the system is composed of the following major components:
+
+* Audio ingestion and preprocessing module
+* Speech-to-text transcription module
+* Local summarization module
+* Local encrypted data storage
+* Graphical user interface
+
+The operational environment includes macOS, Windows, and Linux platforms. No system data may leave the host machine at any time.
+- See Flowchart
 
 ### Product Functions
 The major functions of the system include:
-1. Audio Ingestion: Secure upload of audio files from MP4 recording devices.
-2. Automated Transcription: Conversion of speech to text (English/Spanish source to English output).
-3. Intelligent Summarization: Auto-generation of assessment notes and extraction of key historical themes.
-4. Longitudinal Tracking: Visualization or reporting of client behavioral trends over multiple sessions.
-5. Audit & Search: A query interface for retrieving specific notes or client history for administrative review.
+
+1. Secure ingestion of MP4 audio recordings from external devices.
+2. Automatic language detection for supported languages.
+3. Offline speech-to-text transcription.
+4. Cleaning and normalization of transcript data.
+5. Automated summarization of session transcripts.
+6. Creation and management of patient profiles.
+7. Association of multiple sessions with a single patient record.
+8. Local storage of transcripts, summaries, and metadata.
+9. Search, filter, and retrieval of patient records.
+10. Administrative auditing with restricted modification access.
+11. Status reporting and progress feedback during processing.
 
 ### User Characteristics
 * Primary User (Psychologist): Non-technical subject matter experts. They require an intuitive interface that minimizes technical friction, allowing them to focus on patient analysis rather than software configuration. They often work with translators.
@@ -146,6 +168,14 @@ The major functions of the system include:
 ## Non Functional Requirements
 * Access Security: Not being able to connect to the internet for security reasons. -Minh
 * Usability: Our application should be intuitive and easy to use. -Matthew
+  * ### NFR-002: Usability
+    * The user interface shall follow a clear clinical workflow from audio ingestion through summary review.
+    * The system shall not require technical configuration by the end user.
+    * All primary tasks shall be accessible within three or fewer user interactions from the main screen.
+    * The system shall provide visible progress indicators during transcription and summarization.
+    * The system shall clearly communicate its current state (idle, processing, completed, or error).
+    * Error messages shall be human-readable and provide corrective guidance when possible.
+    * The system shall not require command-line interaction or external documentation for normal operation.
 * Efficiency: How quickly should we be able to create a transcription and notes? - James
 * Installability: How should this be put on their machines and ran? - Sparkes
   * **NFR-001**: System Installability 
