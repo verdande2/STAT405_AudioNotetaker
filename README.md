@@ -117,23 +117,23 @@ The major functions of the system include:
 
 ### Limitations
 * Performance & Hardware constraints:
-*   The system is limited by the storage capacity and processing power of the host laptop, as offloading processing to the cloud is prohibited.
-*   The system's performance will be constrained by the hardware running it, namely CPU and presence of a dedicated Nvidia GPU.
-*   The processing time need not be real-time, but a 1:1 (or better) input audio duration:processing duration would be ideal.
+  * The system is limited by the storage capacity and processing power of the host laptop, as offloading processing to the cloud is prohibited.
+  * The system's performance will be constrained by the hardware running it, namely CPU and presence of a dedicated Nvidia GPU.
+  * The processing time need not be real-time, but a 1:1 (or better) input audio duration:processing duration would be ideal.
 * Data Sovereignty:
-*   No data may leave the local machine; all backups and history must be managed locally.
-*   The system must be installed via an external drive (USB drive, etc) and no data may leave the local machine.
-*   The local machine will not have internet access.
+  * No data may leave the local machine; all backups and history must be managed locally.
+  * The system must be installed via an external drive (USB drive, etc) and no data may leave the local machine.
+  * The local machine will not have internet access.
 * Audio Quality:
-*   The accuracy of the model is dependent on the quality of the input recording, which may vary in high-stress environments.
+  * The accuracy of the model is dependent on the quality of the input recording, which may vary in high-stress environments.
 * Localization:
-*   The system will be designed to digest multilingual audio files in mp4 format.
-*   The graphical user interface will be designed in US English.
-*   The system documentation will be in US English.
-*   All data to be stored in the system will be standardized to US English.
+  * The system will be designed to digest multilingual audio files in mp4 format.
+  * The graphical user interface will be designed in US English.
+  * The system documentation will be in US English.
+  * All data to be stored in the system will be standardized to US English.
 * Usability:
-*   The system will be able to be installed by a non-administrator user account.
-*   The system should not require any additional installations such as runtime or third party external libraries to be installed.
+  * The system will be able to be installed by a non-administrator user account.
+  * The system should not require any additional installations such as runtime or third party external libraries to be installed.
 
 
 ## Definitions
@@ -148,14 +148,14 @@ The major functions of the system include:
 * Usability: Our application should be intuitive and easy to use. -Matthew
 * Efficiency: How quickly should we be able to create a transcription and notes? - James
 * Installability: How should this be put on their machines and ran? - Sparkes
-*   **NFR-001**: System Installability 
-*    The system shall be installable by a **layman user** or **technician** in no more than 15 minutes.
-*    The system shall **train/guide** the user through basic functionality requiring no more than 15 minutes.
-*    The system should indicate its **state** to the user in a **clear** and **concise** way at all times.
-*    The system should be able to gracefully **handle** common **errors,** and output **human-readable error messages** if unable.
-*    The system should be easily installable.
-*    The system should **leave no traces** (except for the data store, as per user choice) on the local device after uninstallation.
-*    The system will be designed as a **fully featured single deployable version**, with **no planned updates** or maintainence schedule planned. 
+  * **NFR-001**: System Installability 
+    * The system shall be installable by a **layman user** or **technician** in no more than 15 minutes.
+    * The system shall **train/guide** the user through basic functionality requiring no more than 15 minutes.
+    * The system should indicate its **state** to the user in a **clear** and **concise** way at all times.
+    * The system should be able to gracefully **handle** common **errors,** and output **human-readable error messages** if unable.
+    * The system should be easily installable.
+    * The system should **leave no traces** (except for the data store, as per user choice) on the local device after uninstallation.
+    * The system will be designed as a **fully featured single deployable version**, with **no planned updates** or maintainence schedule planned. 
 * Confidentiality: Using HIPAA protected data and making sure things are secure. - Hailey
 
 
