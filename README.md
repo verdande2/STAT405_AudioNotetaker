@@ -82,7 +82,7 @@ This assignment is just the participation grade for the in class portion and all
 # Introduction
 
 ## Purpose
-The purpose of this Software Requirements Specification (SRS) is to define the requirements for a local, desktop-based transcription and assessment summarization tool designed for psychologists. The system aims to modernize the current workflow of handwritten notes by automating the transcription of client sessions and generating behavioral summaries. This tool is specifically designed to function within high-security environments (e.g., prisons, facilities for at-risk youth) where data privacy regulations strictly prohibit cloud-based storage or external data transmission.
+The purpose of this Software Requirements Specification (SRS) is to define the requirements for a local, desktop-based transcription and assessment summarization tool designed for psychologists. The system aims to modernize the current workflow of handwritten notes by automating the transcription of client sessions and generating behavioral summaries. The system is intended for use in the juvenile mental health system and is designed to assist providers in maintaining consistent records over long-term patient care. It is also intended to support situations where records may need to be reviewed by substitute providers. This tool is specifically designed to function within high-security environments (e.g., prisons, facilities for at-risk youth) where data privacy regulations strictly prohibit cloud-based storage or external data transmission.
 
 ## Scope
 The software will be a standalone desktop application capable of ingesting audio recordings (specifically MP4 format) from external recording devices. The system will perform the following core activities:
