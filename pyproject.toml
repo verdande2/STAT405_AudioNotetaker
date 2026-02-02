@@ -9,4 +9,5 @@ dependencies = [
     "pip>=26.0",
     "speechrecognition>=3.14.5",
     "transcribe-anything>=3.2.4",
+    "whisperx",
 ]
