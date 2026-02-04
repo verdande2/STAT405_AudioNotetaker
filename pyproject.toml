@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "hf>=1.4.0",
+    "huggingface-hub>=1.4.0",
     "ipykernel>=7.1.0",
     "pip>=26.0",
     "pydantic>=2.12.5",
