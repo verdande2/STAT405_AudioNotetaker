@@ -51,6 +51,7 @@ dependencies = [
     "pydub>=0.25.1",
     "pyinstaller>=6.18.0",
     "pylance>=2.0.0",
+    "pyside6>=6.10.2",
     "pytest>=9.0.2",
     "requests>=2.32.5",
     "rich>=14.2.0",
@@ -66,10 +67,6 @@ dependencies = [
     "torch>=2.10.0",
     "torchaudio>=2.10.0",
     "tqdm>=4.67.3",
-    "transcribe-anything>=3.2.4",
-    "treon>=0.1.4",
-    "ultraplot>=1.72.0",
-    "whisper>=1.1.10",
 ]
 
 [tool.ruff]
