@@ -1,0 +1,144 @@
+Could not load libtorchcodec. Likely causes:
+          1. FFmpeg is not properly installed in your environment. We support
+             versions 4, 5, 6, 7, and 8, and we attempt to load libtorchcodec
+             for each of those versions. Errors for versions not installed on
+             your system are expected; only the error for your installed FFmpeg
+             version is relevant. On Windows, ensure you've installed the
+             "full-shared" version which ships DLLs.
+          2. The PyTorch version (2.10.0+cpu) is not compatible with
+             this version of TorchCodec. Refer to the version compatibility
+             table:
+             https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec.
+          3. Another runtime dependency; see exceptions below.
+
+
+
+
+andrew.sparkes@Legolas MINGW64 /z/code/STAT405_AudioNotetaker (Sparkes)
+$ ffmpeg -version
+ffmpeg version 2026-02-09-git-9bfa1635ae-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers
+built with gcc 15.2.0 (Rev11, Built by MSYS2 project)
+configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-cairo --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enable-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvvenc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libaom --enable-libjxl --enable-libsvtjpegxs --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libshaderc --enable-vulkan --enable-libplacebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint --enable-whisper
+libavutil      60. 24.100 / 60. 24.100
+libavcodec     62. 23.103 / 62. 23.103
+libavformat    62.  8.102 / 62.  8.102
+libavdevice    62.  2.100 / 62.  2.100
+libavfilter    11. 12.100 / 11. 12.100
+libswscale      9.  3.100 /  9.  3.100
+libswresample   6.  2.100 /  6.  2.100
+
+Exiting with exit code 0
+
+andrew.sparkes@Legolas MINGW64 /z/code/STAT405_AudioNotetaker (Sparkes)
+$ which ffmpeg
+/z/.local/bin/ffmpeg
+
+Made the mistake of installing the regular version instead of the full-shared version with included DLLs, copied them over to z/.local/bin for now
+
+andrew.sparkes@Legolas MINGW64 /z/code/STAT405_AudioNotetaker (Sparkes)
+$ ffmpeg -version
+ffmpeg version 8.0.1-full_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers
+built with gcc 15.2.0 (Rev8, Built by MSYS2 project)
+configuration: --enable-gpl --enable-version3 --enable-shared --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enable-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvvenc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libaom --enable-libjxl --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libshaderc --enable-vulkan --enable-libplacebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint --enable-whisper
+libavutil      60.  8.100 / 60.  8.100
+libavcodec     62. 11.100 / 62. 11.100
+libavformat    62.  3.100 / 62.  3.100
+libavdevice    62.  1.100 / 62.  1.100
+libavfilter    11.  4.100 / 11.  4.100
+libswscale      9.  1.100 /  9.  1.100
+libswresample   6.  1.100 /  6.  1.100
+
+Exiting with exit code 0
+
+andrew.sparkes@Legolas MINGW64 /z/code/STAT405_AudioNotetaker (Sparkes)
+$ which ffmpeg
+/z/.local/bin/ffmpeg
+
+
+
+Now we're talking, that looks better...
+
+Now, handling that token parameter incorrect name in the pipeline call, it's actually `token`, _not_ `use_auth_token`... After fixing that... The next cell produces:
+ 
+config.yaml:   0%|          | 0.00/469 [00:00<?, ?B/s]
+pytorch_model.bin:   0%|          | 0.00/5.91M [00:00<?, ?B/s]
+---------------------------------------------------------------------------
+UnpicklingError                           Traceback (most recent call last)
+Cell In[9], line 7
+      3 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+      5 from pyannote.audio import Pipeline
+----> 7 pipeline = Pipeline.from_pretrained( # this call causes the giant error below
+      8         "pyannote/speaker-diarization-3.1",
+      9         token = HF_TOKEN,
+     10 )
+     12 # Move pipeline to appropriate device
+     13 pipeline = pipeline.to(device)
+
+File z:\code\STAT405_AudioNotetaker\.venv\Lib\site-packages\pyannote\audio\core\pipeline.py:244, in Pipeline.from_pretrained(cls, checkpoint, revision, hparams_file, token, cache_dir)
+    242 params.setdefault("token", token)
+    243 params.setdefault("cache_dir", cache_dir)
+--> 244 pipeline = Klass(**params)
+    246 # save pipeline origin (HF, local, etc) and class name as attributes for telemetry purposes
+    247 pipeline._otel_origin = otel_origin
+
+File z:\code\STAT405_AudioNotetaker\.venv\Lib\site-packages\pyannote\audio\pipelines\speaker_diarization.py:222, in SpeakerDiarization.__init__(self, legacy, segmentation, segmentation_step, embedding, embedding_exclude_overlap, plda, clustering, embedding_batch_size, segmentation_batch_size, der_variant, token, cache_dir)
+    219 self.legacy = legacy
+    221 self.segmentation_model = segmentation
+--> 222 model: Model = get_model(segmentation, token=token, cache_dir=cache_dir)
+    224 self.segmentation_step = segmentation_step
+    226 self.embedding = embedding
+
+File z:\code\STAT405_AudioNotetaker\.venv\Lib\site-packages\pyannote\audio\pipelines\utils\getter.py:115, in get_model(model, token, cache_dir)
+    112     pass
+    114 elif isinstance(model, str):
+--> 115     _model = Model.from_pretrained(
+    116         model,
+    117         token=token,
+    118         cache_dir=cache_dir,
+    119         strict=False,
+    120     )
+    121     if _model:
+    122         model = _model
+
+File z:\code\STAT405_AudioNotetaker\.venv\Lib\site-packages\pyannote\audio\core\model.py:602, in Model.from_pretrained(cls, checkpoint, map_location, strict, subfolder, revision, token, cache_dir, **kwargs)
+    599     map_location = default_map_location
+    601 # load checkpoint using lightning
+--> 602 loaded_checkpoint = pl_load(path_to_model_checkpoint, map_location=map_location)
+    604 # check that the checkpoint is compatible with the current version
+    605 versions = loaded_checkpoint["pyannote.audio"]["versions"]
+
+File z:\code\STAT405_AudioNotetaker\.venv\Lib\site-packages\lightning\fabric\utilities\cloud_io.py:73, in _load(path_or_url, map_location, weights_only)
+     71 fs = get_filesystem(path_or_url)
+     72 with fs.open(path_or_url, "rb") as f:
+---> 73     return torch.load(
+     74         f,
+     75         map_location=map_location,  # type: ignore[arg-type]
+     76         weights_only=weights_only,
+     77     )
+
+File z:\code\STAT405_AudioNotetaker\.venv\Lib\site-packages\torch\serialization.py:1548, in load(f, map_location, pickle_module, weights_only, mmap, **pickle_load_args)
+   1540                 return _load(
+   1541                     opened_zipfile,
+   1542                     map_location,
+   (...)   1545                     **pickle_load_args,
+   1546                 )
+   1547             except pickle.UnpicklingError as e:
+-> 1548                 raise pickle.UnpicklingError(_get_wo_message(str(e))) from None
+   1549         return _load(
+   1550             opened_zipfile,
+   1551             map_location,
+   (...)   1554             **pickle_load_args,
+   1555         )
+   1556 if mmap:
+
+UnpicklingError: Weights only load failed. This file can still be loaded, to do so you have two options, do those steps only if you trust the source of the checkpoint. 
+	(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL torch.torch_version.TorchVersion was not an allowed global by default. Please use `torch.serialization.add_safe_globals([torch.torch_version.TorchVersion])` or the `torch.serialization.safe_globals([torch.torch_version.TorchVersion])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+
+
+
+
+So it would appear there is some issue with the torch weights? I think?
