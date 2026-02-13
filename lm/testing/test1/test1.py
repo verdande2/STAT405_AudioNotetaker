@@ -1,4 +1,5 @@
-# import Summarizer
+from ...Summarizer import Summary
+
 
 models = { "lm/models/granite-4.0-h-tiny", "lm/models/granite-4.0-micro", "lm/models/Qwen3-0.6B" }
 transcripts = { "lm/testing/testDocuments/transcript1.txt", "lm/testing/testDocuments/transcript2.txt" }
@@ -14,4 +15,4 @@ for model in models:
     for transcript in transcripts:
         text = open(transcript).read()
         for i in range(8):
-            output.write(model + "\n" + transcript + "\n" + i/1
+            output.write(model + "\n" + transcript + "\n" + i/10 + "\n" + summary.SummarizeSingle(transcript = transcript, temp = i/10))
