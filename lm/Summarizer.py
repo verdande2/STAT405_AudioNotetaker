@@ -3,7 +3,7 @@ dummy summarizer class
 """
 from llama_cpp import Llama
 
-class summary:
+class Summary:
     def __init__(self): # temporarily empty, will replace the functionality of SetParameters later
         self.llm
         self.prompt_template
@@ -12,23 +12,25 @@ class summary:
         # model = llama_cpp.llama_load_model_from_file(...)
         # 
         
-    def SetParameters(self, path): #testing class
+    def SetParameters(self, path, template): #testing class
         self.llm = Llama(
             model_path=path,
-            #prompt_template = '''[INST] <<SYS>>
-            #prompt template
-            #<</SYS>>
-            #{prompt}[/INST]
-            #'''
-            #n_context = 2048 change max context size
+            prompt_template = '''[INST] <<SYS>>
+            {template}
+            <</SYS>>
+            {prompt}[/INST]
+            ''',
+            n_context = 2048, #change max context size, default 2048
         )
         
     
-    def SummarizeSingle(self, transcript):
+    def SummarizeSingle(self, transcript, temp):
         output = self.llm(self.prompt_template.format(prompt = transcript),
              max_tokens=150,
-             echo=False,)
+             echo=False,
+             temperature=temp
+             )
         return (output)
         
-    def SummarizeSingleWithHistory(self, transcript, summary):
-        nothing = 0
+    # def SummarizeSingleWithHistory(self, transcript, summary):
+    #     nothing = 0
