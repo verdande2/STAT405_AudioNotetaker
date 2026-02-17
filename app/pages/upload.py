@@ -32,9 +32,9 @@ class DropZone(QFrame):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(16)
         
-        icon = QLabel("📁")
-        icon.setObjectName("uploadIcon")
-        icon.setStyleSheet("font-size: 25px;")
+        icon = QLabel("Drop MP4 files here")
+        icon.setObjectName("uploadText")
+        icon.setStyleSheet("font-size: 16px;")
         icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         browse_btn = QPushButton("Browse Files")
@@ -99,8 +99,8 @@ class FileQueueItem(QFrame):
         layout.setSpacing(16)
         
         # File icon
-        icon = QLabel("🎵")
-        icon.setStyleSheet("font-size: 24px;")
+        icon = QLabel("MP4")
+        icon.setStyleSheet("font-size: 12px; font-weight: 700; color: #38bdf8; background-color: #1e3a5f; padding: 4px 8px; border-radius: 4px;")
         layout.addWidget(icon)
         
         # File info
@@ -283,7 +283,7 @@ class UploadPage(QWidget):
         
         actions_layout.addStretch()
         
-        self.process_btn = QPushButton("🚀  Start Processing")
+        self.process_btn = QPushButton("Start Processing")
         self.process_btn.setObjectName("accentButton")
         self.process_btn.setMinimumWidth(200)
         self.process_btn.setCursor(Qt.CursorShape.PointingHandCursor)

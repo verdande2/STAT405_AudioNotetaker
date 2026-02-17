@@ -7,10 +7,11 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QFrame, QScrollArea, QLineEdit,
     QTableWidget, QTableWidgetItem, QHeaderView,
-    QComboBox, QAbstractItemView, QDialog,
+    QAbstractItemView, QDialog,
     QFormLayout, QCheckBox
 )
 from PySide6.QtCore import Qt, Signal
+from app.components.no_scroll_combo import NoScrollComboBox
 
 
 class CreateAccountDialog(QDialog):
@@ -51,7 +52,7 @@ class CreateAccountDialog(QDialog):
         self.name_input.setPlaceholderText("Full name")
         form.addRow("Full Name:", self.name_input)
         
-        self.role_combo = QComboBox()
+        self.role_combo = NoScrollComboBox()
         self.role_combo.addItem("Psychologist", "psychologist")
         self.role_combo.addItem("Administrator", "admin")
         form.addRow("Role:", self.role_combo)
@@ -178,7 +179,7 @@ class EditAccountDialog(QDialog):
         self.name_input.setText(self.account_data.get('name', ''))
         form.addRow("Full Name:", self.name_input)
         
-        self.role_combo = QComboBox()
+        self.role_combo = NoScrollComboBox()
         self.role_combo.addItem("Psychologist", "psychologist")
         self.role_combo.addItem("Administrator", "admin")
         
@@ -290,7 +291,7 @@ class AccountsPage(QWidget):
         
         self.search_input = QLineEdit()
         self.search_input.setObjectName("searchInput")
-        self.search_input.setPlaceholderText("🔍  Search by username or name...")
+        self.search_input.setPlaceholderText("Search by username or name...")
         self.search_input.setMinimumWidth(300)
         self.search_input.textChanged.connect(self._filter_accounts)
         filter_layout.addWidget(self.search_input)
@@ -301,7 +302,7 @@ class AccountsPage(QWidget):
         role_label.setObjectName("cardSubtitle")
         filter_layout.addWidget(role_label)
         
-        self.role_filter = QComboBox()
+        self.role_filter = NoScrollComboBox()
         self.role_filter.addItem("All Roles")
         self.role_filter.addItem("Psychologist")
         self.role_filter.addItem("Administrator")
@@ -312,7 +313,7 @@ class AccountsPage(QWidget):
         status_label.setObjectName("cardSubtitle")
         filter_layout.addWidget(status_label)
         
-        self.status_filter = QComboBox()
+        self.status_filter = NoScrollComboBox()
         self.status_filter.addItem("All")
         self.status_filter.addItem("Active")
         self.status_filter.addItem("Inactive")
@@ -338,7 +339,7 @@ class AccountsPage(QWidget):
         self.table.setColumnWidth(0, 130)
         self.table.setColumnWidth(3, 120)
         self.table.setColumnWidth(4, 90)
-        self.table.setColumnWidth(5, 150)
+        self.table.setColumnWidth(5, 200)
         
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -356,10 +357,6 @@ class AccountsPage(QWidget):
         info_frame.setObjectName("card")
         info_layout = QHBoxLayout(info_frame)
         info_layout.setContentsMargins(20, 16, 20, 16)
-        
-        info_icon = QLabel("ℹ️")
-        info_icon.setStyleSheet("font-size: 20px;")
-        info_layout.addWidget(info_icon)
         
         info_text = QLabel(
             "Account management is restricted to administrators. All changes are "
@@ -421,71 +418,67 @@ class AccountsPage(QWidget):
             actions_layout.setSpacing(4)
             
             edit_btn = QPushButton("Edit")
-            edit_btn.setObjectName("secondaryButton")
-            edit_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+            edit_btn.setObjectName("tableButton")
             edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             edit_btn.clicked.connect(
                 lambda checked, a=account: self._show_edit_dialog(a)
             )
             actions_layout.addWidget(edit_btn)
-            
+
             delete_btn = QPushButton("Delete")
-            delete_btn.setObjectName("dangerButton")
-            delete_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+            delete_btn.setObjectName("tableDangerButton")
             delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             actions_layout.addWidget(delete_btn)
-            
+
             self.table.setCellWidget(row, 5, actions_widget)
             self.table.setRowHeight(row, 56)
-    
+
     def _show_create_dialog(self):
         """Show create account dialog."""
         dialog = CreateAccountDialog(self)
         dialog.account_created.connect(self._on_account_created)
         dialog.exec()
-    
+
     def _show_edit_dialog(self, account: dict):
         """Show edit account dialog."""
         dialog = EditAccountDialog(account, self)
         dialog.account_updated.connect(self._on_account_updated)
         dialog.exec()
-    
+
     def _on_account_created(self, data: dict):
         """Handle new account creation."""
         # TODO: Hook up to backend endpoint
         row = self.table.rowCount()
         self.table.insertRow(row)
-        
+
         self.table.setItem(row, 0, QTableWidgetItem(data['username']))
         self.table.setItem(row, 1, QTableWidgetItem(data['name']))
         self.table.setItem(row, 2, QTableWidgetItem(data.get('email', '')))
-        
+
         role_item = QTableWidgetItem(data['role_display'])
         role_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         self.table.setItem(row, 3, role_item)
-        
+
         status_item = QTableWidgetItem("Active")
         status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         self.table.setItem(row, 4, status_item)
-        
+
         # Add action buttons
         actions_widget = QWidget()
         actions_layout = QHBoxLayout(actions_widget)
         actions_layout.setContentsMargins(4, 4, 4, 4)
         actions_layout.setSpacing(4)
-        
+
         edit_btn = QPushButton("Edit")
-        edit_btn.setObjectName("secondaryButton")
-        edit_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+        edit_btn.setObjectName("tableButton")
         edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         actions_layout.addWidget(edit_btn)
-        
+
         delete_btn = QPushButton("Delete")
-        delete_btn.setObjectName("dangerButton")
-        delete_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+        delete_btn.setObjectName("tableDangerButton")
         delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         actions_layout.addWidget(delete_btn)
-        
+
         self.table.setCellWidget(row, 5, actions_widget)
         self.table.setRowHeight(row, 56)
     

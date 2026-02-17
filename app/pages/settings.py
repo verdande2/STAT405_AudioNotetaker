@@ -6,10 +6,11 @@ Application configuration and preferences
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QFrame, QScrollArea, QLineEdit,
-    QComboBox, QCheckBox, QSpinBox, QGroupBox,
+    QCheckBox, QSpinBox, QGroupBox,
     QFormLayout, QSlider, QTextEdit
 )
 from PySide6.QtCore import Qt, Signal
+from app.components.no_scroll_combo import NoScrollComboBox
 
 
 class SettingsSection(QFrame):
@@ -108,13 +109,13 @@ class SettingsPage(QWidget):
         trans_form.setSpacing(12)
         trans_form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         
-        self.default_language = QComboBox()
+        self.default_language = NoScrollComboBox()
         self.default_language.addItem("Auto-detect", "auto")
         self.default_language.addItem("English", "en")
         self.default_language.addItem("Spanish", "es")
         trans_form.addRow("Default Language:", self.default_language)
         
-        self.output_language = QComboBox()
+        self.output_language = NoScrollComboBox()
         self.output_language.addItem("English", "en")
         trans_form.addRow("Output Language:", self.output_language)
         
@@ -139,7 +140,7 @@ class SettingsPage(QWidget):
         summary_form.setSpacing(12)
         summary_form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         
-        self.summary_length = QComboBox()
+        self.summary_length = NoScrollComboBox()
         self.summary_length.addItem("Brief (1-2 paragraphs)", "brief")
         self.summary_length.addItem("Standard (3-4 paragraphs)", "standard")
         self.summary_length.addItem("Detailed (comprehensive)", "detailed")
@@ -213,7 +214,7 @@ class SettingsPage(QWidget):
         perf_form.setSpacing(12)
         perf_form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         
-        self.processing_device = QComboBox()
+        self.processing_device = NoScrollComboBox()
         self.processing_device.addItem("Auto (GPU if available)", "auto")
         self.processing_device.addItem("CPU Only", "cpu")
         self.processing_device.addItem("NVIDIA GPU (CUDA)", "cuda")
@@ -241,7 +242,7 @@ class SettingsPage(QWidget):
         ui_form.setSpacing(12)
         ui_form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         
-        self.theme = QComboBox()
+        self.theme = NoScrollComboBox()
         self.theme.addItem("Dark (Default)", "dark")
         self.theme.addItem("Light", "light")
         self.theme.addItem("System", "system")

@@ -4,13 +4,15 @@ Search, filter, and manage all transcripts
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFrame, QScrollArea, QLineEdit,
     QTableWidget, QTableWidgetItem, QHeaderView,
-    QComboBox, QAbstractItemView, QDateEdit,
-    QDialog, QTextEdit, QPlainTextEdit, QSplitter
+    QAbstractItemView, QDateEdit, QTableView,
+    QDialog, QTextEdit, QPlainTextEdit
 )
 from PySide6.QtCore import Qt, Signal, QDate
+from PySide6.QtGui import QTextCharFormat, QColor
+from app.components.no_scroll_combo import NoScrollComboBox
 
 
 class TranscriptDetailDialog(QDialog):
@@ -19,30 +21,42 @@ class TranscriptDetailDialog(QDialog):
     def __init__(self, transcript_data: dict, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Transcript Details")
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(900, 700)
+        self.resize(1000, 800)
         self._setup_ui(transcript_data)
     
     def _setup_ui(self, data: dict):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(32, 32, 32, 32)
-        layout.setSpacing(24)
-        
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+
+        # Scrollable content area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        scroll_content = QWidget()
+        layout = QVBoxLayout(scroll_content)
+        layout.setContentsMargins(32, 28, 32, 28)
+        layout.setSpacing(20)
+
         # Header
         header = QHBoxLayout()
-        
+
         title_section = QVBoxLayout()
+        title_section.setSpacing(4)
         title = QLabel(data.get('patient_name', 'Unknown Patient'))
         title.setObjectName("dialogTitle")
-        
+
         subtitle = QLabel(f"Session: {data.get('date', 'Unknown Date')} • {data.get('duration', '')}")
         subtitle.setObjectName("cardSubtitle")
-        
+
         title_section.addWidget(title)
         title_section.addWidget(subtitle)
         header.addLayout(title_section)
-        
+
         header.addStretch()
-        
+
         status = data.get('status', 'Complete')
         status_map = {
             "Complete": "statusComplete",
@@ -52,56 +66,63 @@ class TranscriptDetailDialog(QDialog):
         status_label = QLabel(status)
         status_label.setObjectName(status_map.get(status, "statusPending"))
         header.addWidget(status_label)
-        
+
         layout.addLayout(header)
-        
-        # Content splitter
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        
+
         # Summary section
         summary_frame = QFrame()
         summary_frame.setObjectName("card")
         summary_layout = QVBoxLayout(summary_frame)
-        summary_layout.setContentsMargins(16, 16, 16, 16)
-        
+        summary_layout.setContentsMargins(12, 12, 12, 12)
+        summary_layout.setSpacing(8)
+
         summary_title = QLabel("AI Summary")
         summary_title.setObjectName("cardTitle")
         summary_layout.addWidget(summary_title)
-        
+
         summary_text = QPlainTextEdit()
         summary_text.setPlainText(data.get('summary', 'No summary available'))
         summary_text.setReadOnly(True)
-        summary_text.setMaximumHeight(150)
+        # Size to fit content rather than using a fixed max height
+        doc = summary_text.document()
+        doc.adjustSize()
+        summary_text.setFixedHeight(300)
         summary_layout.addWidget(summary_text)
-        
-        splitter.addWidget(summary_frame)
-        
+
+        layout.addWidget(summary_frame)
+
         # Full transcript section
         transcript_frame = QFrame()
         transcript_frame.setObjectName("card")
         transcript_layout = QVBoxLayout(transcript_frame)
-        transcript_layout.setContentsMargins(16, 16, 16, 16)
-        
+        transcript_layout.setContentsMargins(12, 12, 12, 12)
+        transcript_layout.setSpacing(8)
+
         transcript_title = QLabel("Full Transcript")
         transcript_title.setObjectName("cardTitle")
         transcript_layout.addWidget(transcript_title)
-        
+
         transcript_text = QPlainTextEdit()
         transcript_text.setPlainText(data.get('transcript', 'No transcript available'))
         transcript_text.setReadOnly(True)
+        transcript_text.setMinimumHeight(400)
         transcript_layout.addWidget(transcript_text)
-        
-        splitter.addWidget(transcript_frame)
-        splitter.setSizes([200, 400])
-        
-        layout.addWidget(splitter)
-        
-        # Close button
+
+        layout.addWidget(transcript_frame, 1)
+
+        scroll.setWidget(scroll_content)
+        outer_layout.addWidget(scroll, 1)
+
+        # Footer with close button pinned at bottom
+        footer = QHBoxLayout()
+        footer.setContentsMargins(32, 12, 32, 16)
+        footer.addStretch()
         close_btn = QPushButton("Close")
         close_btn.setObjectName("secondaryButton")
         close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         close_btn.clicked.connect(self.accept)
-        layout.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignRight)
+        footer.addWidget(close_btn)
+        outer_layout.addLayout(footer)
 
 
 class TranscriptsPage(QWidget):
@@ -120,7 +141,7 @@ class TranscriptsPage(QWidget):
         header = QWidget()
         header.setObjectName("pageHeader")
         header_layout = QVBoxLayout(header)
-        header_layout.setContentsMargins(40, 32, 40, 32)
+        header_layout.setContentsMargins(40, 24, 40, 20)
         header_layout.setSpacing(4)
         
         title = QLabel("Transcripts")
@@ -137,95 +158,112 @@ class TranscriptsPage(QWidget):
         content = QWidget()
         content.setObjectName("pageContent")
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(40, 24, 40, 32)
-        content_layout.setSpacing(20)
+        content_layout.setContentsMargins(40, 16, 40, 24)
+        content_layout.setSpacing(12)
         
         # Search and filter bar
         filter_frame = QFrame()
         filter_frame.setObjectName("card")
+        filter_frame.setStyleSheet("QFrame#card { padding: 10px; }")
         filter_layout = QVBoxLayout(filter_frame)
-        filter_layout.setContentsMargins(20, 20, 20, 20)
-        filter_layout.setSpacing(16)
-        
+        filter_layout.setContentsMargins(12, 10, 12, 10)
+        filter_layout.setSpacing(8)
+
+        compact_combo = "padding: 6px 10px; font-size: 13px; min-height: 0px;"
+        compact_btn = "padding: 6px 16px; min-height: 0px; font-size: 13px;"
+
         # Row 1: Search
         search_layout = QHBoxLayout()
-        
+        search_layout.setSpacing(8)
+
         self.search_input = QLineEdit()
         self.search_input.setObjectName("searchInput")
-        self.search_input.setPlaceholderText("🔍  Search transcripts by content, patient name, or keywords...")
+        self.search_input.setPlaceholderText("Search transcripts by content, patient name, or keywords...")
+        self.search_input.setStyleSheet("padding: 7px 20px 7px 20px;")
         self.search_input.textChanged.connect(self._filter_transcripts)
         search_layout.addWidget(self.search_input)
-        
+
         search_btn = QPushButton("Search")
         search_btn.setObjectName("primaryButton")
-        search_btn.setStyleSheet("padding: 10px 24px;")
+        search_btn.setStyleSheet(compact_btn)
         search_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         search_layout.addWidget(search_btn)
-        
+
         filter_layout.addLayout(search_layout)
-        
+
         # Row 2: Filters
         filters_layout = QHBoxLayout()
-        filters_layout.setSpacing(16)
-        
+        filters_layout.setSpacing(6)
+        filters_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+
         # Patient filter
         patient_label = QLabel("Patient:")
         patient_label.setObjectName("cardSubtitle")
-        filters_layout.addWidget(patient_label)
-        
-        self.patient_filter = QComboBox()
+        filters_layout.addWidget(patient_label, alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        self.patient_filter = NoScrollComboBox()
+        self.patient_filter.setStyleSheet(compact_combo)
         self.patient_filter.addItem("All Patients")
         self.patient_filter.addItem("John Doe")
         self.patient_filter.addItem("Maria Santos")
         self.patient_filter.addItem("Alex Rodriguez")
-        self.patient_filter.setMinimumWidth(150)
+        self.patient_filter.setMinimumWidth(140)
         filters_layout.addWidget(self.patient_filter)
-        
+
+        filters_layout.addSpacing(6)
+
         # Status filter
         status_label = QLabel("Status:")
         status_label.setObjectName("cardSubtitle")
-        filters_layout.addWidget(status_label)
-        
-        self.status_filter = QComboBox()
+        filters_layout.addWidget(status_label, alignment=Qt.AlignmentFlag.AlignVCenter)
+
+        self.status_filter = NoScrollComboBox()
+        self.status_filter.setStyleSheet(compact_combo)
         self.status_filter.addItem("All Status")
         self.status_filter.addItem("Complete")
         self.status_filter.addItem("Processing")
         self.status_filter.addItem("Pending Review")
-        self.status_filter.setMinimumWidth(130)
+        self.status_filter.setMinimumWidth(120)
         filters_layout.addWidget(self.status_filter)
-        
+
+        filters_layout.addSpacing(6)
+
         # Date range
-        date_label = QLabel("Date Range:")
+        date_label = QLabel("From:")
         date_label.setObjectName("cardSubtitle")
-        filters_layout.addWidget(date_label)
-        
+        filters_layout.addWidget(date_label, alignment=Qt.AlignmentFlag.AlignVCenter)
+
         self.date_from = QDateEdit()
         self.date_from.setCalendarPopup(True)
+        self.date_from.setStyleSheet("padding: 5px 8px; font-size: 12px;")
         self.date_from.setDate(QDate.currentDate().addMonths(-1))
+        self._style_calendar(self.date_from)
         filters_layout.addWidget(self.date_from)
-        
-        to_label = QLabel("to")
+
+        to_label = QLabel("To:")
         to_label.setObjectName("cardSubtitle")
-        filters_layout.addWidget(to_label)
-        
+        filters_layout.addWidget(to_label, alignment=Qt.AlignmentFlag.AlignVCenter)
+
         self.date_to = QDateEdit()
         self.date_to.setCalendarPopup(True)
+        self.date_to.setStyleSheet("padding: 5px 8px; font-size: 12px;")
         self.date_to.setDate(QDate.currentDate())
+        self._style_calendar(self.date_to)
         filters_layout.addWidget(self.date_to)
-        
+
         filters_layout.addStretch()
-        
+
         clear_btn = QPushButton("Clear Filters")
         clear_btn.setObjectName("secondaryButton")
-        clear_btn.setStyleSheet("padding: 8px 16px;")
+        clear_btn.setStyleSheet(compact_btn)
         clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         clear_btn.clicked.connect(self._clear_filters)
         filters_layout.addWidget(clear_btn)
-        
+
         filter_layout.addLayout(filters_layout)
         
         content_layout.addWidget(filter_frame)
-        
+
         # Results table
         self.table = QTableWidget()
         self.table.setColumnCount(6)
@@ -242,8 +280,8 @@ class TranscriptsPage(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
         
         self.table.setColumnWidth(0, 130)
-        self.table.setColumnWidth(2, 80)
-        self.table.setColumnWidth(3, 90)
+        self.table.setColumnWidth(2, 110)
+        self.table.setColumnWidth(3, 110)
         self.table.setColumnWidth(4, 110)
         self.table.setColumnWidth(5, 180)
         
@@ -256,8 +294,8 @@ class TranscriptsPage(QWidget):
         # Load sample data
         self._load_sample_data()
         
-        content_layout.addWidget(self.table)
-        
+        content_layout.addWidget(self.table, 1)
+
         # Results count and pagination
         pagination_layout = QHBoxLayout()
         
@@ -280,8 +318,8 @@ class TranscriptsPage(QWidget):
         pagination_layout.addWidget(next_btn)
         
         content_layout.addLayout(pagination_layout)
-        
-        layout.addWidget(content)
+
+        layout.addWidget(content, 1)
     
     def _load_sample_data(self):
         """Load sample transcript data."""
@@ -336,17 +374,15 @@ class TranscriptsPage(QWidget):
             actions_layout.setSpacing(4)
             
             view_btn = QPushButton("View")
-            view_btn.setObjectName("secondaryButton")
-            view_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+            view_btn.setObjectName("tableButton")
             view_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             view_btn.clicked.connect(
                 lambda checked, t=transcript: self._view_transcript(t)
             )
             actions_layout.addWidget(view_btn)
-            
+
             export_btn = QPushButton("Export")
-            export_btn.setObjectName("secondaryButton")
-            export_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+            export_btn.setObjectName("tableButton")
             export_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             actions_layout.addWidget(export_btn)
             
@@ -397,6 +433,103 @@ class TranscriptsPage(QWidget):
                     break
             self.table.setRowHidden(row, not match if text else False)
     
+    def _style_calendar(self, date_edit: QDateEdit):
+        """Fix calendar popup colors and sizing for dark theme."""
+        cal = date_edit.calendarWidget()
+        cal.setMinimumWidth(300)
+        cal.setMinimumHeight(200)
+
+        # Apply self-contained stylesheet on the calendar widget directly
+        cal.setStyleSheet("""
+            QCalendarWidget {
+                background-color: #1a2332;
+                border: 1px solid #3b4a5a;
+                border-radius: 8px;
+            }
+            QWidget#qt_calendar_navigationbar {
+                background-color: #0f1729;
+                border-bottom: 1px solid #2d3748;
+                padding: 4px;
+            }
+            QToolButton {
+                background-color: transparent;
+                color: #e2e8f0;
+                border: none;
+                border-radius: 4px;
+                padding: 4px 8px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            QToolButton:hover {
+                background-color: #1e293b;
+                color: #38bdf8;
+            }
+            QToolButton::menu-indicator {
+                image: none;
+                width: 0;
+            }
+            QMenu {
+                background-color: #1a2332;
+                border: 1px solid #3b4a5a;
+                color: #e2e8f0;
+            }
+            QMenu::item:selected {
+                background-color: #2563eb;
+                color: #ffffff;
+            }
+            QSpinBox {
+                background-color: #1a2332;
+                color: #e2e8f0;
+                border: 1px solid #3b4a5a;
+                border-radius: 4px;
+                padding: 2px 6px;
+                font-size: 13px;
+                max-width: 70px;
+            }
+        """)
+
+        # Style the internal table view with explicit QSS to override
+        # the global QTableView rules that hide calendar day text
+        table_view = cal.findChild(QTableView)
+        if table_view:
+            table_view.setStyleSheet("""
+                QTableView {
+                    background-color: #1a2332;
+                    alternate-background-color: #1a2332;
+                    border: none;
+                    gridline-color: transparent;
+                    selection-background-color: #2563eb;
+                    selection-color: #ffffff;
+                }
+                QTableView::item {
+                    color: #e2e8f0;
+                    padding: 0px;
+                    border: none;
+                    border-bottom: none;
+                }
+                QTableView::item:selected {
+                    background-color: #2563eb;
+                    color: #ffffff;
+                }
+            """)
+
+        # Override weekday text formats (Qt defaults weekends to red)
+        day_fmt = QTextCharFormat()
+        day_fmt.setForeground(QColor("#e2e8f0"))
+        for day in (
+            Qt.DayOfWeek.Monday, Qt.DayOfWeek.Tuesday,
+            Qt.DayOfWeek.Wednesday, Qt.DayOfWeek.Thursday,
+            Qt.DayOfWeek.Friday, Qt.DayOfWeek.Saturday,
+            Qt.DayOfWeek.Sunday,
+        ):
+            cal.setWeekdayTextFormat(day, day_fmt)
+
+        # Header row (Mon, Tue, etc.)
+        header_fmt = QTextCharFormat()
+        header_fmt.setForeground(QColor("#94a3b8"))
+        header_fmt.setBackground(QColor("#0f1729"))
+        cal.setHeaderTextFormat(header_fmt)
+
     def _clear_filters(self):
         """Reset all filters."""
         self.search_input.clear()

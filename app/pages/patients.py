@@ -7,10 +7,11 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QFrame, QScrollArea, QLineEdit,
     QTableWidget, QTableWidgetItem, QHeaderView,
-    QDialog, QFormLayout, QTextEdit, QComboBox,
+    QDialog, QFormLayout, QTextEdit,
     QAbstractItemView
 )
 from PySide6.QtCore import Qt, Signal
+from app.components.no_scroll_combo import NoScrollComboBox
 from datetime import datetime
 
 
@@ -157,14 +158,14 @@ class PatientsPage(QWidget):
         
         self.search_input = QLineEdit()
         self.search_input.setObjectName("searchInput")
-        self.search_input.setPlaceholderText("🔍  Search patients by name or MRN...")
+        self.search_input.setPlaceholderText("Search patients by name or MRN...")
         self.search_input.setMinimumWidth(300)
         self.search_input.textChanged.connect(self._filter_patients)
         filter_layout.addWidget(self.search_input)
         
         filter_layout.addStretch()
         
-        self.sort_combo = QComboBox()
+        self.sort_combo = NoScrollComboBox()
         self.sort_combo.addItem("Sort: Most Recent")
         self.sort_combo.addItem("Sort: Name A-Z")
         self.sort_combo.addItem("Sort: Name Z-A")
@@ -269,17 +270,15 @@ class PatientsPage(QWidget):
             actions_layout.setSpacing(4)
             
             view_btn = QPushButton("View")
-            view_btn.setObjectName("secondaryButton")
-            view_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+            view_btn.setObjectName("tableButton")
             view_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             view_btn.clicked.connect(
                 lambda checked, pid=patient['id']: self.view_patient_requested.emit(pid)
             )
             actions_layout.addWidget(view_btn)
-            
+
             edit_btn = QPushButton("Edit")
-            edit_btn.setObjectName("secondaryButton")
-            edit_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+            edit_btn.setObjectName("tableButton")
             edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             actions_layout.addWidget(edit_btn)
             
@@ -323,14 +322,12 @@ class PatientsPage(QWidget):
         actions_layout.setSpacing(4)
         
         view_btn = QPushButton("View")
-        view_btn.setObjectName("secondaryButton")
-        view_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+        view_btn.setObjectName("tableButton")
         view_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         actions_layout.addWidget(view_btn)
-        
+
         edit_btn = QPushButton("Edit")
-        edit_btn.setObjectName("secondaryButton")
-        edit_btn.setStyleSheet("padding: 6px 12px; font-size: 12px;")
+        edit_btn.setObjectName("tableButton")
         edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         actions_layout.addWidget(edit_btn)
         
