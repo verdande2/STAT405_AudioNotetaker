@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import os
+import secrets
 from pathlib import Path
 
 from sqlcipher3 import dbapi2 as sqlite
 
-from app.security import KeyStoreError, get_saved_database_key
+from app.security import KeyStoreError, get_saved_database_key, save_database_key
 
 DB_KEY_ENV_VAR = "TRANSCRIBENOTES_DB_KEY"
 DB_PATH_ENV_VAR = "TRANSCRIBENOTES_DB_PATH"
-DEFAULT_DB_PATH = Path("data") / "transcribenotes.db"
+APP_DATA_DIR_NAME = "TranscribeNotes"
+DEFAULT_DB_FILENAME = "transcribenotes.db"
 CURRENT_SCHEMA_VERSION = 2
 
 
@@ -177,13 +179,24 @@ MIGRATION_STATEMENTS = (
 def resolve_db_path() -> Path:
     """Resolve DB location from env or fallback path."""
     raw_path = os.getenv(DB_PATH_ENV_VAR)
-    db_path = Path(raw_path).expanduser() if raw_path else DEFAULT_DB_PATH
+    if raw_path:
+        db_path = Path(raw_path).expanduser()
+    else:
+        local_app_data = os.getenv("LOCALAPPDATA", "").strip()
+        if local_app_data:
+            db_path = (
+                Path(local_app_data) / APP_DATA_DIR_NAME / "data" / DEFAULT_DB_FILENAME
+            )
+        else:
+            db_path = (
+                Path.home() / ".transcribenotes" / "data" / DEFAULT_DB_FILENAME
+            )
     return db_path.resolve()
 
 
 def get_database_key() -> str:
     """Read the first available SQLCipher key candidate."""
-    candidates = _get_database_key_candidates()
+    candidates = _get_database_key_candidates(resolve_db_path())
     if not candidates:
         raise MissingDatabaseKeyError(
             f"Missing {DB_KEY_ENV_VAR} and no saved key found."
@@ -191,7 +204,24 @@ def get_database_key() -> str:
     return candidates[0]
 
 
-def _get_database_key_candidates() -> list[str]:
+def _provision_local_database_key(db_path: Path) -> str:
+    """Create and persist a local key when bootstrapping a fresh machine."""
+    if db_path.exists() and db_path.stat().st_size > 0:
+        raise MissingDatabaseKeyError(
+            f"Missing {DB_KEY_ENV_VAR} and no saved key found for existing DB at: {db_path}"
+        )
+
+    generated_key = secrets.token_urlsafe(48)
+    try:
+        save_database_key(generated_key)
+    except KeyStoreError as exc:
+        raise DatabaseInitializationError(
+            f"Failed to persist generated DB key: {exc}"
+        ) from exc
+    return generated_key
+
+
+def _get_database_key_candidates(db_path: Path) -> list[str]:
     """Return unique key candidates from env and local key store."""
     candidates: list[str] = []
 
@@ -206,6 +236,9 @@ def _get_database_key_candidates() -> list[str]:
 
     if saved_key and saved_key not in candidates:
         candidates.append(saved_key)
+
+    if not candidates:
+        candidates.append(_provision_local_database_key(db_path))
 
     return candidates
 
@@ -226,7 +259,7 @@ def connect_encrypted() -> sqlite.Connection:
     db_path = resolve_db_path()
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    key_candidates = _get_database_key_candidates()
+    key_candidates = _get_database_key_candidates(db_path)
     if not key_candidates:
         raise MissingDatabaseKeyError(
             f"Missing {DB_KEY_ENV_VAR} and no saved key found."

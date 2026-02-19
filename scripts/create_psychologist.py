@@ -16,8 +16,12 @@ from app.db import (
     AuthenticationError,
     AuthorizationError,
     BUILT_IN_ADMIN_USERNAME,
+    DB_PATH_ENV_VAR,
+    InvalidDatabaseKeyError,
+    MissingDatabaseKeyError,
     create_psychologist_account,
     initialize_database,
+    resolve_db_path,
 )
 
 
@@ -51,7 +55,27 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    initialize_database()
+    try:
+        initialize_database()
+    except MissingDatabaseKeyError as exc:
+        print(f"[ERROR] {exc}")
+        print(
+            "[HINT] If you copied an encrypted DB from another machine, copy that machine's DB key file too."
+        )
+        print(
+            f"[HINT] Or point {DB_PATH_ENV_VAR} to a fresh local DB path and retry."
+        )
+        return 1
+    except InvalidDatabaseKeyError:
+        print("[ERROR] Local key could not decrypt the configured database file.")
+        print(f"[HINT] Configured DB path: {resolve_db_path()}")
+        print(
+            "[HINT] This usually means the DB file came from another machine without its key."
+        )
+        print(
+            f"[HINT] Copy the original key file, or set {DB_PATH_ENV_VAR} to a new DB path."
+        )
+        return 1
 
     psych_username = (args.psych_username or "").strip()
     if not psych_username:
