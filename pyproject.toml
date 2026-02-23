@@ -6,5 +6,6 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "pyside6>=6.10.2",
+    "sqlcipher3>=0.6.2",
     "transcribe-anything>=3.2.4",
 ]
