@@ -118,7 +118,7 @@ class PatientDetailPage(QWidget):
         header_layout.addStretch()
         
         # Action buttons
-        edit_btn = QPushButton("✏️  Edit Profile")
+        edit_btn = QPushButton("Edit Profile")
         edit_btn.setObjectName("secondaryButton")
         edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         header_layout.addWidget(edit_btn)
