@@ -206,9 +206,14 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-
 # skip the ffmpeg folder, don't want to push that crap to github
 ffmpeg/
 
 # don't version control the downloaded data
 ami_samples
+
+# Local runtime data (encrypted SQLCipher databases and machine key cache)
+data/*.db
+data/*.db-*
+.transcribenotes/
+
