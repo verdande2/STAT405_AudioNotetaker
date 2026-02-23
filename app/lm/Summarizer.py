@@ -38,12 +38,12 @@ class Summary:
 
 
 ##########################################################################Bullshit
-with open('lm/testing/sample documents/example2.json', 'r') as f:
-    transcript = json.load(f)
+# with open('app/lm/testing/sample documents/example1.json', 'r') as f:
+#     transcript = json.load(f)
 
-summary = Summary(path='lm/models/Phi-3-mini-4k-instruct-q4.gguf')
+# summary = Summary(path='models/Phi-3-mini-4k-instruct-q4.gguf')
 
-sum = summary.SummarizeSingle(transcript=transcript)
+# sum = summary.SummarizeSingle(transcript=transcript)
 
-print(sum)
+# print(sum)
 

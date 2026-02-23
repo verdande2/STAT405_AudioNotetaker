@@ -56,7 +56,7 @@ cover/
 *.pot
 
 # model folder
-lm/models
+models
 
 # Django stuff:
 *.log
