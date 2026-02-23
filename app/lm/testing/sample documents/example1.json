@@ -1,0 +1,170 @@
+[
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [0.0, 12.0],
+    "text": "Hello. I'm here to support you today. It sounds like anxiety has been affecting your daily life significantly. How would you describe the impact of these feelings on your routine?",
+    "reason": "beginning"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [12.0, 35.8],
+    "text": "It's really hard to explain. I feel like my body is always tense—my hands shake when I'm waiting in line or if someone walks up behind me. The worst part is that I start thinking about worst-case scenarios before they even happen. Like, what if I get sick? What if I can't breathe? It's like my mind keeps replaying those moments over and over until I feel physically exhausted just from imagining them.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [35.8, 60.2],
+    "text": "That sounds like a lot of physical and emotional weight to carry. Can you tell me more about what triggers these feelings? Are there specific situations or times when they seem worse?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [60.2, 95.1],
+    "text": "Yeah, it's mostly in crowded places—like malls, buses, or even just being around a lot of people at work. I'll start sweating and my heart will race before I even step inside. Sometimes I'll leave early if I can, but then I feel guilty for avoiding things that I used to enjoy. The other thing is that I notice it's worse when I'm alone—my thoughts spiral into this endless loop of ‘what ifs.' Even though I know logically that most people aren't dangerous, my brain just won't let me relax.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [95.1, 120.3],
+    "text": "It makes sense that you'd feel conflicted about avoiding situations—it's a common struggle when anxiety starts to control how we live our lives. Have there been moments where you've felt like you could manage these feelings better? Or is it always overwhelming?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [120.3, 158.7],
+    "text": "There have been small moments. Like when I was younger, I'd pretend to be sick so I wouldn't go to school if I felt too anxious. But that never worked long-term—it just made things worse. The only time it's helped a little is when I've forced myself to do something small, like ordering food in public or taking the bus for just one ride. Even then, my body would protest, but after a while, it got easier. It's like my brain needs that tiny win to remind me that I'm not helpless.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [158.7, 204.9],
+    "text": "That's really insightful—small steps can build confidence over time. Would you say your anxiety is more about fear of the unknown or a specific worry that keeps coming back? For example, is it mostly about health concerns, social judgment, or something else?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [204.9, 251.6],
+    "text": "It's a mix. I think the biggest fear is that I'll lose control—like my body will just stop working or something. That's why public spaces are so hard; there's no escape if things go wrong. But there's also this other part where I'm afraid of being judged for how I feel. Like, what if people think I'm weak or crazy? It's like anxiety has this double role—it both protects me and punishes me at the same time.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [251.6, 307.8],
+    "text": "That's a really important distinction—anxiety can feel like it's both a shield and a cage. Have you noticed any patterns in how these feelings change over time? For example, do they get worse with stress, or does something else make them feel more manageable?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [307.8, 364.5],
+    "text": "Sometimes they do get worse when I'm already stressed—like if something unexpected happens at work or with my family. But there are also times when I'm just sitting still and doing nothing that the anxiety feels a little less intense. Like, if I'm lying in bed or watching TV, it's easier to breathe. It's almost like my body needs to be busy to feel safe, but then being busy makes me more anxious because I don't know what's coming next.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [364.5, 420.7],
+    "text": "That's fascinating—it sounds like your body might be seeking both movement and stillness in different ways. Would you say that when you're avoiding situations, it's mostly because you feel unsafe, or is there also a part of you that feels guilty for not facing them?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [420.7, 485.3],
+    "text": "Both, honestly. I feel unsafe because my body is always on edge, but then I also feel guilty for not trying harder. Like, if I don't go out, am I really living? It's this constant loop of ‘I should be brave, but I can't.' It's exhausting to keep up with that internal battle.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [485.3, 560.1],
+    "text": "It sounds like you're carrying a lot of emotional weight between those two feelings—both fear and self-judgment. Have you ever tried to talk about these feelings with someone else? Sometimes sharing them can help separate the anxiety from the story we tell ourselves about it.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [560.1, 638.4],
+    "text": "I've tried talking to friends, but they don't always understand. Some say I'm being dramatic or that I'm overreacting. Others just get tired of hearing about it and change the subject. It's like no one knows what it's really like to live with this constant fear. The few times I've been open, though, I felt a little lighter afterward—like maybe they were listening even if they didn't say much. But then I'd worry that they'd think less of me for being ‘too sensitive.'",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [638.4, 715.2],
+    "text": "It's really brave to share that with me today. Sometimes the hardest part isn't the anxiety itself but the fear of being misunderstood or judged by others. Have you ever thought about how your anxiety might be protecting you in some way? For example, is there a part of you that feels safer when you're avoiding things?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [715.2, 803.6],
+    "text": "I guess so. Like, if I'm at home, I don't have to worry about what others think or if something bad will happen outside my door. It's a weird comfort—like being trapped in a bubble where nothing can hurt me. But that bubble also means I miss out on things that bring real joy. I used to love going to concerts or exploring new places, but now I'd rather stay home and watch movies alone.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [803.6, 902.4],
+    "text": "That's a really important observation—your anxiety might be creating this safety net, but it's also limiting your experiences in ways that feel like losses. Would you say that when you're avoiding things, it's mostly about fear of the unknown, or is there also a part where you feel like you're failing at being ‘normal'?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [902.4, 1008.7],
+    "text": "Both, I think. Like, if I'm in a crowd and someone touches me or gets too close, my body reacts like it's in danger—even though they're not. But then I also feel like I'm failing at being ‘normal' because everyone else seems to handle public spaces without flinching. It's like I'm stuck between two fears: the fear of real harm and the fear of being seen as different.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [1008.7, 1125.9],
+    "text": "That's a powerful way to put it—being stuck between those two fears is really isolating. Have you ever tried any techniques or strategies that have helped you manage these feelings in the moment? For example, grounding exercises, deep breathing, or anything else?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [1125.9, 1236.8],
+    "text": "I've tried a few things. Deep breathing works sometimes—like when I'm waiting for the bus, I'll close my eyes and focus on counting to ten before opening them again. That helps calm my racing heart for a little while. There's also this app that does progressive muscle relaxation; it's not perfect, but it gives me something to do with my hands so I don't fidget or panic. The hardest part is remembering to use it when I'm in the middle of a panic attack—my brain just wants to spiral faster.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [1236.8, 1350.9],
+    "text": "It sounds like you've already found some small tools that can help ground yourself in the moment. Would you say these techniques feel more like coping strategies or are they starting to reduce the intensity of your anxiety over time?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [1350.9, 1478.2],
+    "text": "They feel like coping strategies right now—like band-aids for the wounds. But I've noticed that when I use them consistently, they start to make a difference. Like, if I practice breathing exercises before going out, my body feels less tense afterward. It's not like I'm cured, but it's better than nothing. The challenge is staying consistent because anxiety makes you forget about these tools in the first place.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [1478.2, 1605.3],
+    "text": "That's really encouraging—consistency is key when it comes to managing anxiety. Would you say that your goal right now is more about learning coping skills or is there a part of you that wants to explore what might be at the root of these feelings?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [1605.3, 1742.5],
+    "text": "Both, I think. Right now, I'm focused on managing the day-to-day so I can function better. But there's also this deeper question: Why does my body react like this? Like, why does it feel like my anxiety is always ready to jump out and scare me? It's not just about fear—it's like my body has a memory of something that happened before, even if I don't remember what it was.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [1742.5, 1890.6],
+    "text": "That's a really thoughtful question—your body might be carrying memories or learned responses that aren't just about the present moment. Have you ever thought about how your anxiety might be connected to past experiences? For example, could there be something from your childhood or early life that influenced how you feel in public?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [1890.6, 2047.8],
+    "text": "I don't know if it's from childhood exactly, but there was a time when I was very young—I think around five or six—and I got really sick with something that made me weak and tired for weeks. My parents were scared because they didn't know what it was, and they kept me in bed most of the time. After that, I started avoiding places where I might get sick again—like parks or playgrounds. It wasn't until later that I realized how much my body still carries that fear.",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [2047.8, 2195.9],
+    "text": "That's a really meaningful connection—your early experience with illness might have shaped how you feel about vulnerability and safety in the world. Would you say that this fear of being sick or weak is still a big part of your anxiety, or has it evolved into something else?",
+    "reason": "speaker-switch"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [2195.9, 2364.0],
+    "text": "It's both. The fear of being sick is still there, but now it's mixed with this other fear—like my body might just stop working entirely. I don't know why that happened, but it's like my brain keeps replaying scenarios where something terrible happens if I'm not careful. It's almost like my anxiety has its own language, and I have to learn how to translate it.",
+    "reason": "speaker-switch"
+  }
+]

@@ -1,0 +1,176 @@
+[
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [0.0, 12.0],
+        "text": "Hello. I'm here to help. You don't need to rush—take your time if you'd like.",
+        "reason": "greeting"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [12.0, 35.0],
+        "text": "Uh. okay. I've been feeling really angry lately when things don't go my way. Like, if someone cuts me off in traffic or if my phone dies mid-conversation—it just. explodes inside me. I can't control it.",
+        "reason": "initial-disclosure"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [35.0, 48.0],
+        "text": "Anger like that can feel overwhelming. What happens right before you feel it start?",
+        "reason": "follow-up-question"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [48.0, 72.5],
+        "text": "I. I get this tightness in my chest, like my heart's racing. My hands start shaking a little. And then—oh god—I feel like I'm going to explode. Like if someone touches me or says something wrong, it just. hits me all at once.",
+        "reason": "physical-symptoms"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [72.5, 86.0],
+        "text": "That sounds intense. Does it feel like you're losing control?",
+        "reason": "emotional-state"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [86.0, 110.2],
+        "text": "Yeah. sometimes I do. Like, I want to scream or hit something. But then I think about what happens after—people get scared or mad at me. So I just. freeze. It's worse than the anger.",
+        "reason": "self-censorship"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [110.2, 125.0],
+        "text": "Freezing can be a way to protect yourself. What triggers it most?",
+        "reason": "trigger-identification"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [125.0, 148.3],
+        "text": "Oh. when I'm with people who don't listen to me. Like my boss or my partner—if they interrupt or dismiss what I say, it's like a switch flips. And then. I just shut down. It's not even anger anymore; it's this numbness.",
+        "reason": "specific-triggers"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [148.3, 162.0],
+        "text": "Numbness can be a way to avoid the pain of being hurt. Have you noticed patterns?",
+        "reason": "pattern-recognition"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [162.0, 185.7],
+        "text": "Yeah. it's worse when I'm tired or stressed from work. Like, if I've been on my feet all day, even a little pushback makes me snap. And then. I feel guilty after. Like I shouldn't be mad at them.",
+        "reason": "stress-link"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [185.7, 200.0],
+        "text": "Guilt can make it harder to address the anger. What would help you feel safer?",
+        "reason": "coping-mechanism"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [200.0, 235.1],
+        "text": "I. I don't know. Maybe if I could just talk to someone without them judging me? Like, not in a big group—just one-on-one. Or maybe writing down what bothers me first before it gets too much.",
+        "reason": "suggested-coping"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [235.1, 248.0],
+        "text": "Writing can be a great way to process. Would you like to try that here?",
+        "reason": "therapeutic-proposal"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [248.0, 275.3],
+        "text": "Uh. yeah? But I don't want to mess up. What if I say something wrong?",
+        "reason": "nervousness"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [275.3, 290.0],
+        "text": "No one's perfect. Just share what comes to mind—no need for perfection.",
+        "reason": "encouragement"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [290.0, 315.6],
+        "text": "Okay. so if someone says something mean, I feel this rush in my chest and then—pause—I want to yell but freeze instead. Like, I'm not even mad at them; it's more like. I'm mad at myself for being so sensitive.",
+        "reason": "self-blame"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [315.6, 328.0],
+        "text": "Self-blame can make it harder to heal. What would help you feel less alone?",
+        "reason": "empathy-focus"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [328.0, 350.1],
+        "text": "I. don't know. Maybe if I could just listen to myself more? Like, when I'm angry, I feel like I'm not even me—just this big, loud thing inside me.",
+        "reason": "internal-conflict"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [350.1, 362.0],
+        "text": "That's a powerful feeling. Would you like to explore what that ‘me' inside feels like?",
+        "reason": "exploration-proposal"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [362.0, 395.8],
+        "text": "Yeah. but I don't want to cry or anything. It's just. scary how strong it gets. Like, if I try to calm down, it feels like I'm fighting something bigger than me.",
+        "reason": "fear-of-control"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [395.8, 408.0],
+        "text": "Fighting it can make it stronger. What if we try small steps?",
+        "reason": "gentle-progress"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [408.0, 432.5],
+        "text": "Like. what? Just taking deep breaths when it starts?",
+        "reason": "simple-coping"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [432.5, 445.0],
+        "text": "Or writing down one thing that triggers you before it gets too big.",
+        "reason": "practical-tip"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [445.0, 478.2],
+        "text": "Okay. but what if I still feel bad after? Like, what if it's not ‘fixed'?",
+        "reason": "long-term-fear"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [478.2, 490.0],
+        "text": "Healing isn't linear. What would help you feel less afraid of it?",
+        "reason": "emotional-support"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [490.0, 523.1],
+        "text": "I. don't know. Maybe if I could just try one thing and not worry about it failing? Like, even if it doesn't work—just. trying?",
+        "reason": "small-goal"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [523.1, 536.0],
+        "text": "That's brave. Would you like to practice that now?",
+        "reason": "practice-proposal"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [536.0, 570.4],
+        "text": "Yeah. but I don't want to mess up. What if I say something wrong again?",
+        "reason": "nervousness-revisited"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [570.4, 582.0],
+        "text": "No mistakes—just learning. Let's start small.",
+        "reason": "reassurance"
+    }
+]
