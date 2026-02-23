@@ -201,10 +201,10 @@ QPushButton#primaryButton {
     color: #ffffff;
     border: none;
     border-radius: 8px;
-    padding: 12px 24px;
+    padding: 8px 20px;
     font-size: 14px;
     font-weight: 600;
-    min-height: 44px;
+    min-height: 32px;
 }
 
 QPushButton#primaryButton:hover {
@@ -225,10 +225,10 @@ QPushButton#secondaryButton {
     color: #94a3b8;
     border: 1px solid #3b4a5a;
     border-radius: 8px;
-    padding: 12px 24px;
+    padding: 8px 20px;
     font-size: 14px;
     font-weight: 500;
-    min-height: 44px;
+    min-height: 32px;
 }
 
 QPushButton#secondaryButton:hover {
@@ -243,10 +243,10 @@ QPushButton#accentButton {
     color: #ffffff;
     border: none;
     border-radius: 8px;
-    padding: 12px 24px;
+    padding: 8px 20px;
     font-size: 14px;
     font-weight: 600;
-    min-height: 44px;
+    min-height: 32px;
 }
 
 QPushButton#accentButton:hover {
@@ -259,13 +259,46 @@ QPushButton#dangerButton {
     color: #ffffff;
     border: none;
     border-radius: 8px;
-    padding: 12px 24px;
+    padding: 8px 20px;
     font-size: 14px;
     font-weight: 600;
+    min-height: 32px;
 }
 
 QPushButton#dangerButton:hover {
     background-color: #ef4444;
+}
+
+QPushButton#tableButton {
+    background-color: #1e3a5f;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 0px;
+}
+
+QPushButton#tableButton:hover {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+QPushButton#tableDangerButton {
+    background-color: #7f1d1d;
+    color: #fca5a5;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 0px;
+}
+
+QPushButton#tableDangerButton:hover {
+    background-color: #dc2626;
+    color: #ffffff;
 }
 
 QPushButton#iconButton {
@@ -356,13 +389,26 @@ QComboBox:focus {
 }
 
 QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
     border: none;
-    width: 30px;
+    width: 32px;
+    border-left: 1px solid #3b4a5a;
+    margin-right: 4px;
 }
 
 QComboBox::down-arrow {
-    width: 12px;
-    height: 12px;
+    image: none;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #94a3b8;
+    margin-right: 4px;
+}
+
+QComboBox::down-arrow:hover {
+    border-top-color: #e2e8f0;
 }
 
 QComboBox QAbstractItemView {
@@ -725,6 +771,44 @@ QCheckBox::indicator:checked, QRadioButton::indicator:checked {
 QCheckBox::indicator:hover, QRadioButton::indicator:hover {
     border-color: #4b5563;
 }
+
+/* ============================================
+   DATE EDIT
+   ============================================ */
+
+QDateEdit {
+    background-color: #1a2332;
+    color: #e2e8f0;
+    border: 1px solid #3b4a5a;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+QDateEdit:focus {
+    border-color: #2563eb;
+}
+
+QDateEdit::drop-down {
+    border: none;
+    width: 24px;
+    border-left: 1px solid #3b4a5a;
+}
+
+QDateEdit::down-arrow {
+    image: none;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #94a3b8;
+}
+
+/* ============================================
+   CALENDAR WIDGET (QDateEdit popup)
+   ============================================ */
+
+/* Calendar is styled programmatically in _style_calendar() */
 
 /* ============================================
    SPIN BOX

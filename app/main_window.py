@@ -104,7 +104,7 @@ class Sidebar(QWidget):
         self.user_role = QLabel("Psychologist")
         self.user_role.setObjectName("userRole")
         
-        logout_btn = QPushButton("  🚪  Logout")
+        logout_btn = QPushButton("Logout")
         logout_btn.setObjectName("navButton")
         logout_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         logout_btn.clicked.connect(self.logout_requested.emit)
@@ -139,13 +139,13 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("TranscribeNotes - Clinical Documentation System")
         self.setMinimumSize(1200, 800)
-        self.resize(1400, 900)
-        
+
         self._setup_ui()
         self._connect_signals()
-        
+
         # Start with login page
         self._show_login()
+        self.showMaximized()
     
     def _setup_ui(self):
         # Central widget

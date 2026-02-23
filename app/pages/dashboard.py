@@ -165,15 +165,15 @@ class DashboardPage(QWidget):
         actions_layout = QHBoxLayout()
         actions_layout.setSpacing(16)
         
-        upload_btn = QPushButton("📁  Upload New Audio")
+        upload_btn = QPushButton("Upload New Audio")
         upload_btn.setObjectName("primaryButton")
         upload_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         
-        new_patient_btn = QPushButton("👤  Create Patient Profile")
+        new_patient_btn = QPushButton("Create Patient Profile")
         new_patient_btn.setObjectName("secondaryButton")
         new_patient_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         
-        search_btn = QPushButton("🔍  Search Records")
+        search_btn = QPushButton("Search Records")
         search_btn.setObjectName("secondaryButton")
         search_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         
