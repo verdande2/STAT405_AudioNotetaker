@@ -210,6 +210,14 @@ class MainWindow(QMainWindow):
         
         # Patient detail - back to list
         self.patient_detail_page.back_requested.connect(self._on_back_to_patients)
+
+        # Accounts page - keep signed-in session in sync with edits/deletes
+        self.accounts_page.authenticated_account_updated.connect(
+            self._on_authenticated_account_updated
+        )
+        self.accounts_page.authenticated_account_deleted.connect(
+            self._on_authenticated_account_deleted
+        )
         
         # Upload page - link to patients
         self.upload_page.patient_selection_requested.connect(
@@ -223,6 +231,10 @@ class MainWindow(QMainWindow):
             self.dashboard_page.refresh_from_database()
         if index == 2:
             self.patients_page.refresh_patients()
+        if index == 3:
+            self.transcripts_page.refresh_transcripts()
+        if index == 4:
+            self.accounts_page.refresh_accounts()
         self.pages.setCurrentIndex(index + 1)
     
     def _on_login_success(self, username: str, role: str):
@@ -231,7 +243,10 @@ class MainWindow(QMainWindow):
         self.sidebar.set_user(username, role)
         self.dashboard_page.set_authenticated_account(self.current_account)
         self.patients_page.set_authenticated_account(self.current_account)
+        self.transcripts_page.set_authenticated_account(self.current_account)
+        self.accounts_page.set_authenticated_account(self.current_account)
         self.sidebar.setVisible(True)
+        self.dashboard_page.refresh_from_database()
         self.pages.setCurrentIndex(1)  # Dashboard
     
     def _on_logout(self):
@@ -240,6 +255,8 @@ class MainWindow(QMainWindow):
         self.login_page.current_account = None
         self.dashboard_page.set_authenticated_account(None)
         self.patients_page.set_authenticated_account(None)
+        self.transcripts_page.set_authenticated_account(None)
+        self.accounts_page.set_authenticated_account(None)
         self._show_login()
     
     def _show_login(self):
@@ -256,3 +273,18 @@ class MainWindow(QMainWindow):
         """Return to patients list."""
         self.pages.setCurrentIndex(3)  # Patients page
         self.sidebar.set_active_page(2)  # Update sidebar selection
+
+    def _on_authenticated_account_updated(self, account):
+        """Update current session after editing the signed-in account."""
+        self.current_account = account
+        self.login_page.current_account = account
+        role = "Administrator" if getattr(account, "role", "") == "admin" else "Psychologist"
+        self.sidebar.set_user(account.display_name, role)
+        self.dashboard_page.set_authenticated_account(account)
+        self.patients_page.set_authenticated_account(account)
+        self.transcripts_page.set_authenticated_account(account)
+        self.accounts_page.set_authenticated_account(account)
+
+    def _on_authenticated_account_deleted(self):
+        """Force logout when the signed-in account is deleted."""
+        self._on_logout()

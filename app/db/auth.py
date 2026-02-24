@@ -107,6 +107,33 @@ def _fetch_admin_account(conn) -> Account | None:
     return _row_to_account(row)
 
 
+def _fetch_account_by_id(conn, account_id: int) -> Account | None:
+    row = conn.execute(
+        """
+        SELECT id, username, display_name, role, is_active
+        FROM accounts
+        WHERE id = ?
+        LIMIT 1
+        """,
+        (account_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return _row_to_account(row)
+
+
+def _fetch_account_by_id_with_password(conn, account_id: int):
+    return conn.execute(
+        """
+        SELECT id, username, display_name, role, is_active, password_hash
+        FROM accounts
+        WHERE id = ?
+        LIMIT 1
+        """,
+        (account_id,),
+    ).fetchone()
+
+
 def _ensure_built_in_admin_account(conn) -> Account:
     existing = _fetch_admin_account(conn)
     if existing is not None:
@@ -187,6 +214,156 @@ def _log_event(
 def has_admin_account() -> bool:
     with connect_encrypted() as conn:
         return _fetch_admin_account(conn) is not None
+
+
+def list_accounts() -> list[Account]:
+    """List all local accounts on this machine."""
+    with connect_encrypted() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, username, display_name, role, is_active
+            FROM accounts
+            ORDER BY
+                CASE WHEN role = 'admin' THEN 0 ELSE 1 END,
+                username COLLATE NOCASE ASC
+            """
+        ).fetchall()
+    return [_row_to_account(row) for row in rows]
+
+
+def _require_admin_master_password(admin_master_password: str | None) -> None:
+    if not admin_master_password or not _verify_built_in_admin_password(admin_master_password):
+        raise AuthenticationError("Invalid admin authorization password.")
+
+
+def update_account(
+    *,
+    actor_account_id: int,
+    target_account_id: int,
+    new_username: str,
+    new_display_name: str,
+    current_password: str | None = None,
+    new_password: str | None = None,
+    admin_master_password: str | None = None,
+) -> Account:
+    """Update account username/display name and optionally password."""
+    username_clean = new_username.strip()
+    display_name_clean = new_display_name.strip()
+    if not username_clean:
+        raise ValueError("Username cannot be empty.")
+    if not display_name_clean:
+        raise ValueError("Display name cannot be empty.")
+
+    change_password = bool(new_password)
+    if change_password and not current_password:
+        raise AuthenticationError("Current password is required to change password.")
+
+    with connect_encrypted() as conn:
+        actor = _fetch_account_by_id(conn, actor_account_id)
+        if actor is None or not actor.is_active:
+            raise AuthorizationError("Signed-in account is not active.")
+
+        target_row = _fetch_account_by_id_with_password(conn, target_account_id)
+        if target_row is None:
+            raise AuthorizationError("Target account was not found.")
+
+        target = _row_to_account(target_row[:5])
+        target_password_hash = target_row[5]
+
+        is_self_edit = actor_account_id == target_account_id
+        if not is_self_edit:
+            _require_admin_master_password(admin_master_password)
+
+        existing = conn.execute(
+            """
+            SELECT id
+            FROM accounts
+            WHERE username = ? COLLATE NOCASE
+              AND id <> ?
+            LIMIT 1
+            """,
+            (username_clean, target_account_id),
+        ).fetchone()
+        if existing:
+            raise AccountExistsError("Username is already in use.")
+
+        if change_password and not _verify_password(current_password or "", target_password_hash):
+            raise AuthenticationError("Current password is incorrect.")
+
+        if change_password:
+            updated_password_hash = _password_hash(new_password or "")
+            conn.execute(
+                """
+                UPDATE accounts
+                SET username = ?, display_name = ?, password_hash = ?
+                WHERE id = ?
+                """,
+                (username_clean, display_name_clean, updated_password_hash, target_account_id),
+            )
+        else:
+            conn.execute(
+                """
+                UPDATE accounts
+                SET username = ?, display_name = ?
+                WHERE id = ?
+                """,
+                (username_clean, display_name_clean, target_account_id),
+            )
+
+        conn.commit()
+        updated = _fetch_account_by_id(conn, target_account_id)
+        if updated is None:
+            raise AuthorizationError("Account update failed.")
+        return updated
+
+
+def delete_account(
+    *,
+    actor_account_id: int,
+    target_account_id: int,
+    target_username: str,
+    target_password: str,
+    admin_master_password: str | None = None,
+) -> Account:
+    """Delete an account after credential checks; cascades account-owned data."""
+    username_attempt = target_username.strip()
+    password_attempt = target_password
+    if not username_attempt or not password_attempt:
+        raise AuthenticationError("Username and password are required to delete an account.")
+
+    with connect_encrypted() as conn:
+        actor = _fetch_account_by_id(conn, actor_account_id)
+        if actor is None or not actor.is_active:
+            raise AuthorizationError("Signed-in account is not active.")
+
+        target_row = _fetch_account_by_id_with_password(conn, target_account_id)
+        if target_row is None:
+            raise AuthorizationError("Target account was not found.")
+
+        target = _row_to_account(target_row[:5])
+        target_password_hash = target_row[5]
+
+        if target.username.casefold() != username_attempt.casefold():
+            raise AuthenticationError("Entered username does not match the selected account.")
+
+        if not _verify_password(password_attempt, target_password_hash):
+            raise AuthenticationError("Invalid username or password.")
+
+        is_self_delete = actor_account_id == target_account_id
+        if not is_self_delete:
+            _require_admin_master_password(admin_master_password)
+
+        # Admin authorizations use ON DELETE RESTRICT for admin_account_id.
+        conn.execute(
+            """
+            DELETE FROM admin_authorizations
+            WHERE admin_account_id = ?
+            """,
+            (target_account_id,),
+        )
+        conn.execute("DELETE FROM accounts WHERE id = ?", (target_account_id,))
+        conn.commit()
+        return target
 
 
 def create_initial_admin_account(

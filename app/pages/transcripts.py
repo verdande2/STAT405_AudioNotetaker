@@ -3,6 +3,8 @@ Transcripts Page for TranscribeNotes Application
 Search, filter, and manage all transcripts
 """
 
+from datetime import datetime
+
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFrame, QScrollArea, QLineEdit,
@@ -13,6 +15,14 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtGui import QTextCharFormat, QColor
 from app.components.no_scroll_combo import NoScrollComboBox
+from app.db import (
+    AuthorizationError,
+    DatabaseInitializationError,
+    InvalidDatabaseKeyError,
+    MissingDatabaseKeyError,
+    list_client_profiles,
+    list_session_records,
+)
 
 
 class TranscriptDetailDialog(QDialog):
@@ -130,6 +140,8 @@ class TranscriptsPage(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._current_account = None
+        self._transcripts_cache = []
         self._setup_ui()
     
     def _setup_ui(self):
@@ -204,10 +216,8 @@ class TranscriptsPage(QWidget):
         self.patient_filter = NoScrollComboBox()
         self.patient_filter.setStyleSheet(compact_combo)
         self.patient_filter.addItem("All Patients")
-        self.patient_filter.addItem("John Doe")
-        self.patient_filter.addItem("Maria Santos")
-        self.patient_filter.addItem("Alex Rodriguez")
         self.patient_filter.setMinimumWidth(140)
+        self.patient_filter.currentIndexChanged.connect(self._filter_transcripts)
         filters_layout.addWidget(self.patient_filter)
 
         filters_layout.addSpacing(6)
@@ -220,10 +230,9 @@ class TranscriptsPage(QWidget):
         self.status_filter = NoScrollComboBox()
         self.status_filter.setStyleSheet(compact_combo)
         self.status_filter.addItem("All Status")
-        self.status_filter.addItem("Complete")
-        self.status_filter.addItem("Processing")
-        self.status_filter.addItem("Pending Review")
+        self.status_filter.addItem("Status TBD")
         self.status_filter.setMinimumWidth(120)
+        self.status_filter.currentIndexChanged.connect(self._filter_transcripts)
         filters_layout.addWidget(self.status_filter)
 
         filters_layout.addSpacing(6)
@@ -238,6 +247,7 @@ class TranscriptsPage(QWidget):
         self.date_from.setStyleSheet("padding: 5px 8px; font-size: 12px;")
         self.date_from.setDate(QDate.currentDate().addMonths(-1))
         self._style_calendar(self.date_from)
+        self.date_from.dateChanged.connect(self._filter_transcripts)
         filters_layout.addWidget(self.date_from)
 
         to_label = QLabel("To:")
@@ -249,6 +259,7 @@ class TranscriptsPage(QWidget):
         self.date_to.setStyleSheet("padding: 5px 8px; font-size: 12px;")
         self.date_to.setDate(QDate.currentDate())
         self._style_calendar(self.date_to)
+        self.date_to.dateChanged.connect(self._filter_transcripts)
         filters_layout.addWidget(self.date_to)
 
         filters_layout.addStretch()
@@ -291,15 +302,14 @@ class TranscriptsPage(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         
-        # Load sample data
-        self._load_sample_data()
+        self._populate_table([])
         
         content_layout.addWidget(self.table, 1)
 
         # Results count and pagination
         pagination_layout = QHBoxLayout()
         
-        self.results_label = QLabel("Showing 1-15 of 156 transcripts")
+        self.results_label = QLabel("Sign in as a psychologist to load transcripts")
         self.results_label.setObjectName("cardSubtitle")
         pagination_layout.addWidget(self.results_label)
         
@@ -321,6 +331,106 @@ class TranscriptsPage(QWidget):
 
         layout.addWidget(content, 1)
     
+    def set_authenticated_account(self, account):
+        """Set signed-in account context and refresh transcripts."""
+        self._current_account = account
+        self.search_input.clear()
+        self.refresh_transcripts()
+
+    def refresh_transcripts(self):
+        """Load transcript/session rows from the local database."""
+        account = self._current_account
+        if account is None:
+            self._transcripts_cache = []
+            self._refresh_patient_filter([])
+            self._populate_table([])
+            self.results_label.setText("Sign in as a psychologist to load transcripts")
+            return
+
+        if getattr(account, "role", None) != "psychologist":
+            self._transcripts_cache = []
+            self._refresh_patient_filter([])
+            self._populate_table([])
+            self.results_label.setText("Transcript history is available to psychologists")
+            return
+
+        try:
+            clients = list_client_profiles(account.id)
+            sessions = list_session_records(account.id)
+        except (
+            AuthorizationError,
+            MissingDatabaseKeyError,
+            InvalidDatabaseKeyError,
+            DatabaseInitializationError,
+        ) as exc:
+            self._transcripts_cache = []
+            self._refresh_patient_filter([])
+            self._populate_table([])
+            self.results_label.setText(f"Failed to load transcripts: {exc}")
+            return
+        except Exception as exc:
+            self._transcripts_cache = []
+            self._refresh_patient_filter([])
+            self._populate_table([])
+            self.results_label.setText(f"Failed to load transcripts: {exc}")
+            return
+
+        patient_lookup = {}
+        for client in clients:
+            first = (client.first_name or "").strip()
+            last = (client.last_name or "").strip()
+            full_name = " ".join([part for part in [first, last] if part]).strip()
+            patient_lookup[client.id] = full_name or "Unnamed Patient"
+
+        rows = []
+        for session in sessions:
+            rows.append(
+                {
+                    "id": session.id,
+                    "date": self._format_display_date(session.created_at),
+                    "date_iso": session.created_at,
+                    "patient": patient_lookup.get(
+                        session.client_profile_id, "Unknown Patient"
+                    ),
+                    "duration": "TBD",
+                    "language": session.detected_language or "Unknown",
+                    "status": "Status TBD",
+                    "summary": session.summary_text or "Summary not available yet.",
+                    "transcript": session.transcript_text or "Transcript not available yet.",
+                }
+            )
+
+        self._transcripts_cache = rows
+        self._refresh_patient_filter(rows)
+        self._populate_table(rows)
+        self._filter_transcripts()
+
+    def _refresh_patient_filter(self, transcripts: list):
+        """Populate patient filter choices from loaded transcript rows."""
+        current_text = (
+            self.patient_filter.currentText() if self.patient_filter.count() else "All Patients"
+        )
+        names = sorted({row.get("patient", "Unknown Patient") for row in transcripts})
+
+        self.patient_filter.blockSignals(True)
+        self.patient_filter.clear()
+        self.patient_filter.addItem("All Patients")
+        for name in names:
+            self.patient_filter.addItem(name)
+        index = self.patient_filter.findText(current_text)
+        self.patient_filter.setCurrentIndex(index if index >= 0 else 0)
+        self.patient_filter.blockSignals(False)
+
+    def _format_display_date(self, created_at: str | None) -> str:
+        if not created_at:
+            return "Unknown Date"
+        for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
+            try:
+                return datetime.strptime(created_at, fmt).strftime("%b %d, %Y")
+            except ValueError:
+                continue
+        return created_at
+
     def _load_sample_data(self):
         """Load sample transcript data."""
         sample_transcripts = [
@@ -341,10 +451,12 @@ class TranscriptsPage(QWidget):
     def _populate_table(self, transcripts: list):
         """Populate table with transcript data."""
         self.table.setRowCount(len(transcripts))
+        self._transcripts_cache = list(transcripts)
         
         for row, transcript in enumerate(transcripts):
             # Date
             date_item = QTableWidgetItem(transcript['date'])
+            date_item.setData(Qt.ItemDataRole.UserRole, transcript.get("date_iso", ""))
             self.table.setItem(row, 0, date_item)
             
             # Patient
@@ -388,6 +500,10 @@ class TranscriptsPage(QWidget):
             
             self.table.setCellWidget(row, 5, actions_widget)
             self.table.setRowHeight(row, 56)
+
+        if len(transcripts) == 0 and self._current_account is not None:
+            if getattr(self._current_account, "role", None) == "psychologist":
+                self.results_label.setText("Showing 0 of 0 transcripts")
     
     def _view_transcript(self, transcript: dict):
         """Open transcript detail dialog."""
@@ -419,19 +535,71 @@ class TranscriptsPage(QWidget):
             )
         }
         
+        full_data["summary"] = transcript.get("summary", "Summary not available yet.")
+        full_data["transcript"] = transcript.get("transcript", "Transcript not available yet.")
+
         dialog = TranscriptDetailDialog(full_data, self)
         dialog.exec()
     
-    def _filter_transcripts(self, text: str):
-        """Filter table by search text."""
+    def _filter_transcripts(self, _value=None):
+        """Filter table by search text and current filter controls."""
+        text = self.search_input.text().strip().lower()
+        selected_patient = self.patient_filter.currentText().strip()
+        selected_status = self.status_filter.currentText().strip()
+        date_from = self.date_from.date()
+        date_to = self.date_to.date()
+        visible_count = 0
+
         for row in range(self.table.rowCount()):
-            match = False
+            text_match = not text
             for col in range(self.table.columnCount() - 1):  # Exclude actions column
                 item = self.table.item(row, col)
-                if item and text.lower() in item.text().lower():
-                    match = True
+                if item and text in item.text().lower():
+                    text_match = True
                     break
-            self.table.setRowHidden(row, not match if text else False)
+
+            patient_item = self.table.item(row, 1)
+            status_item = self.table.item(row, 4)
+            date_item = self.table.item(row, 0)
+
+            patient_match = (
+                selected_patient == "All Patients"
+                or (patient_item and patient_item.text() == selected_patient)
+            )
+            status_match = (
+                selected_status == "All Status"
+                or (status_item and status_item.text() == selected_status)
+            )
+
+            date_match = True
+            if date_item is not None:
+                raw_date = date_item.data(Qt.ItemDataRole.UserRole) or ""
+                if raw_date:
+                    parsed = None
+                    for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
+                        try:
+                            parsed = datetime.strptime(raw_date, fmt)
+                            break
+                        except ValueError:
+                            continue
+                    if parsed is not None:
+                        qd = QDate(parsed.year, parsed.month, parsed.day)
+                        date_match = date_from <= qd <= date_to
+
+            match = text_match and patient_match and status_match and date_match
+            self.table.setRowHidden(row, not match)
+            if match:
+                visible_count += 1
+
+        total = self.table.rowCount()
+        if self._current_account is None:
+            self.results_label.setText("Sign in as a psychologist to load transcripts")
+        elif getattr(self._current_account, "role", None) != "psychologist":
+            self.results_label.setText("Transcript history is available to psychologists")
+        else:
+            self.results_label.setText(
+                f"Showing {visible_count} of {total} transcript{'s' if total != 1 else ''}"
+            )
     
     def _style_calendar(self, date_edit: QDateEdit):
         """Fix calendar popup colors and sizing for dark theme."""
@@ -537,10 +705,7 @@ class TranscriptsPage(QWidget):
         self.status_filter.setCurrentIndex(0)
         self.date_from.setDate(QDate.currentDate().addMonths(-1))
         self.date_to.setDate(QDate.currentDate())
-        
-        # Show all rows
-        for row in range(self.table.rowCount()):
-            self.table.setRowHidden(row, False)
+        self._filter_transcripts()
     
     def load_transcripts(self, transcripts: list):
         """Load transcripts from backend.
@@ -548,5 +713,6 @@ class TranscriptsPage(QWidget):
         Args:
             transcripts: List of transcript dicts from API
         """
-        # TODO: Hook up to backend endpoint
+        self._refresh_patient_filter(transcripts)
         self._populate_table(transcripts)
+        self._filter_transcripts()
