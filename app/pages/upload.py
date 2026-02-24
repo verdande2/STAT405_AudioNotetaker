@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QFrame, QScrollArea, QComboBox,
     QProgressBar, QFileDialog, QListWidget, QListWidgetItem,
-    QTextEdit, QSizePolicy
+    QTextEdit, QSizePolicy, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, QMimeData
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
@@ -356,6 +356,84 @@ class UploadPage(QWidget):
         for widget in self.file_widgets.values():
             widget.set_processing()
         
+        # at the moment we don't have a speech to text model, so it just feed a
+        # dummy transcript through the summarizer and pretend that it was
+        # generated from the uploaded file.
+        main_win = self.window()
+        summarizer = getattr(main_win, 'summarizer', None)
+        if summarizer is None:
+            reason = getattr(main_win, 'summarizer_init_error', None)
+            message = "No summarizer model is available."
+            if reason:
+                message += f"\n\nReason:\n{reason}"
+            QMessageBox.warning(
+                self,
+                "Missing Model",
+                message
+            )
+        else:
+            try:
+                import json, os
+                sample_path = Path(__file__).parents[1] / 'lm' / 'testing' / 'sample documents' / 'test_dummy.json'
+                with open(sample_path, 'r', encoding='utf-8') as f:
+                    transcript = json.load(f)
+            except Exception:
+                # fallback to a minimal transcript
+                transcript = [
+                    {"speaker": "PATIENT", "timestamp": [0, 3], "text": "I've been having trouble focusing after lunch and often drift to other thoughts."},
+                    {"speaker": "THERAPIST", "timestamp": [3, 6], "text": "Have you tried short breaks or a timed work pattern like Pomodoro?"}
+                ]
+
+            try:
+                result = summarizer.SummarizeSingle(transcript=transcript)
+                # ensure we have plain text
+                if isinstance(result, dict):
+                    summary_text = result.get('choices', [{}])[0].get('text', '')
+                else:
+                    summary_text = str(result)
+
+                # sanitize: remove obvious meta-commentary and truncate to 2-3 sentences
+                import re
+                # remove lines that look like model self-talk
+                summary_text = re.sub(r"(?i)\b(wait|okay|let me|that's)\b[\s\S]*", "", summary_text)
+                # split into sentences
+                sentences = re.split(r'(?<=[.!?])\s+', summary_text.strip())
+                # pick up to first 3 non-empty sentences
+                clean_sentences = [s.strip() for s in sentences if s.strip()][:3]
+                summary_text_clean = ' '.join(clean_sentences).strip()
+                if not summary_text_clean:
+                    summary_text_clean = summary_text.strip()
+
+                # append to a rolling logfile at repo-root/logs/summaries.txt
+                from datetime import datetime
+                logs_dir = Path(__file__).parents[2] / 'logs'
+                logs_dir.mkdir(parents=True, exist_ok=True)
+                log_path = logs_dir / 'summaries.txt'
+                with open(log_path, 'a', encoding='utf-8') as lf:
+                    lf.write('---\n')
+                    lf.write(f"Timestamp: {datetime.utcnow().isoformat()}Z\n")
+                    lf.write(f"Files: {', '.join(self.queued_files) if self.queued_files else 'none'}\n")
+                    lf.write('Summary:\n')
+                    lf.write(summary_text_clean + '\n\n')
+
+                # also print a short confirmation to console for developers
+                print(f"Summary appended to {log_path}")
+            except Exception as e:
+                # write the error to the same logfile so failures are visible
+                logs_dir = Path(__file__).parents[2] / 'logs'
+                logs_dir.mkdir(parents=True, exist_ok=True)
+                log_path = logs_dir / 'summaries.txt'
+                with open(log_path, 'a', encoding='utf-8') as lf:
+                    lf.write('---\n')
+                    lf.write(f"Timestamp: {datetime.utcnow().isoformat()}Z\n")
+                    lf.write('Summarization Error:\n')
+                    lf.write(str(e) + '\n\n')
+                print(f"Summarization error: {e}")
+
+        # mark files complete so the user sees something happen
+        for widget in self.file_widgets.values():
+            widget.set_complete()
+
         # TODO: Hook up to backend endpoint
         # self.upload_started.emit(self.queued_files, patient_id)
         

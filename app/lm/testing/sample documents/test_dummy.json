@@ -1,0 +1,27 @@
+[
+  {
+    "speaker": "PATIENT",
+    "timestamp": [0.0, 6.0],
+    "text": "I've really been struggling with staying focused at work. Every time I try to start a task, my mind jumps to something else and I end up wasting hours."
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [6.0, 11.5],
+    "text": "That sounds frustrating. Have you noticed if there's a particular time of day or situation when it happens more often?"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [11.5, 19.0],
+    "text": "Usually mid-afternoon, after lunch. I feel tired and then suddenly I'm thinking about groceries or some argument I had last week. I can't seem to pull myself back."
+  },
+  {
+    "speaker": "THERAPIST",
+    "timestamp": [19.0, 24.0],
+    "text": "It could be both physical fatigue and mental distraction. Have you tried any strategies to refocus, like short breaks or a checklist?"
+  },
+  {
+    "speaker": "PATIENT",
+    "timestamp": [24.0, 32.5],
+    "text": "I've tried lists, but then I forget to look at them. Sometimes I set a timer for 25 minutes of work and 5 minutes off, like a Pomodoro thing, and it helps a little."
+  }
+]

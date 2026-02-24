@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QFrame, QScrollArea, QLineEdit,
     QCheckBox, QSpinBox, QGroupBox,
-    QFormLayout, QSlider, QTextEdit
+    QFormLayout, QSlider, QTextEdit, QFileDialog
 )
 from PySide6.QtCore import Qt, Signal
 from app.components.no_scroll_combo import NoScrollComboBox
@@ -140,6 +140,24 @@ class SettingsPage(QWidget):
         summary_form.setSpacing(12)
         summary_form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         
+        # Which local gguf file to use for the summarizer.  the file is too
+        # large to check in, so users are expected to download James's model
+        # manually and point this field at the path.  we default to the
+        # conventional ``models/Qwen3-4B-Q5_0.gguf`` location that the rest
+        # of the code also uses.
+        self.model_path = QLineEdit()
+        self.model_path.setText("models/Qwen3-4B-Q5_0.gguf")
+        self.model_path.setReadOnly(False)
+        model_layout = QHBoxLayout()
+        model_layout.addWidget(self.model_path)
+        browse_model_btn = QPushButton("Browse")
+        browse_model_btn.setObjectName("secondaryButton")
+        browse_model_btn.setStyleSheet("padding: 8px 16px;")
+        browse_model_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        browse_model_btn.clicked.connect(self._browse_model_file)
+        model_layout.addWidget(browse_model_btn)
+        summary_form.addRow("Summarizer Model:", model_layout)
+
         self.summary_length = NoScrollComboBox()
         self.summary_length.addItem("Brief (1-2 paragraphs)", "brief")
         self.summary_length.addItem("Standard (3-4 paragraphs)", "standard")
@@ -336,6 +354,7 @@ class SettingsPage(QWidget):
             'speaker_diarization': self.speaker_diarization.isChecked(),
             
             # Summarization
+            'model_path': self.model_path.text(),
             'summary_length': self.summary_length.currentData(),
             'include_quotes': self.include_quotes.isChecked(),
             'behavioral_themes': self.behavioral_themes.isChecked(),
@@ -370,6 +389,7 @@ class SettingsPage(QWidget):
         self.speaker_diarization.setChecked(False)
         
         # Summarization
+        self.model_path.setText("models/Qwen3-4B-Q5_0.gguf")
         self.summary_length.setCurrentIndex(1)
         self.include_quotes.setChecked(True)
         self.behavioral_themes.setChecked(True)
@@ -398,4 +418,17 @@ class SettingsPage(QWidget):
         """
         # TODO: Hook up to backend/config file
         # Apply settings to UI widgets
+        if 'model_path' in settings:
+            self.model_path.setText(settings.get('model_path', self.model_path.text()))
+
+    def _browse_model_file(self):
+        """Open file dialog to select summarizer gguf file."""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Summarizer Model",
+            "",
+            "GGUF Files (*.gguf);;All Files (*)"
+        )
+        if path:
+            self.model_path.setText(path)
         pass

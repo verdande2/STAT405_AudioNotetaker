@@ -214,3 +214,8 @@ __marimo__/
 data/*.db
 data/*.db-*
 .transcribenotes/
+
+# Local models and logs (large files not checked into git)
+/models/
+/logs/
+*.gguf
