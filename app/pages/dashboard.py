@@ -9,6 +9,14 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 
+from app.db import (
+    AuthorizationError,
+    DatabaseInitializationError,
+    InvalidDatabaseKeyError,
+    MissingDatabaseKeyError,
+    get_record_counts,
+)
+
 
 class StatsCard(QFrame):
     """Statistics display card."""
@@ -102,6 +110,7 @@ class DashboardPage(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._current_account = None
         self._setup_ui()
     
     def _setup_ui(self):
@@ -280,3 +289,59 @@ class DashboardPage(QWidget):
             self.pending_review.update_value(str(stats['pending_review']))
         if 'processing' in stats:
             self.processing.update_value(str(stats['processing']))
+
+    def set_authenticated_account(self, account):
+        """Store signed-in account context and refresh dashboard counts."""
+        self._current_account = account
+        self.refresh_from_database()
+
+    def refresh_from_database(self):
+        """Refresh dashboard counters from local DB for psychologists."""
+        account = self._current_account
+        if account is None or getattr(account, "role", None) != "psychologist":
+            self.refresh_stats(
+                {
+                    "total_patients": 0,
+                    "total_transcripts": 0,
+                    "pending_review": 0,
+                    "processing": 0,
+                }
+            )
+            return
+
+        try:
+            counts = get_record_counts(account.id)
+        except (
+            AuthorizationError,
+            MissingDatabaseKeyError,
+            InvalidDatabaseKeyError,
+            DatabaseInitializationError,
+        ):
+            self.refresh_stats(
+                {
+                    "total_patients": 0,
+                    "total_transcripts": 0,
+                    "pending_review": 0,
+                    "processing": 0,
+                }
+            )
+            return
+        except Exception:
+            self.refresh_stats(
+                {
+                    "total_patients": 0,
+                    "total_transcripts": 0,
+                    "pending_review": 0,
+                    "processing": 0,
+                }
+            )
+            return
+
+        self.refresh_stats(
+            {
+                "total_patients": counts.client_count,
+                "total_transcripts": counts.session_count,
+                "pending_review": 0,
+                "processing": 0,
+            }
+        )

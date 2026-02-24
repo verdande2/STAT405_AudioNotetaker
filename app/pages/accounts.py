@@ -12,6 +12,16 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 from app.components.no_scroll_combo import NoScrollComboBox
+from app.db import (
+    AccountExistsError,
+    AuthenticationError,
+    AuthorizationError,
+    DatabaseInitializationError,
+    InvalidDatabaseKeyError,
+    MissingDatabaseKeyError,
+    create_psychologist_account,
+    initialize_database,
+)
 
 
 class CreateAccountDialog(QDialog):
@@ -54,7 +64,6 @@ class CreateAccountDialog(QDialog):
         
         self.role_combo = NoScrollComboBox()
         self.role_combo.addItem("Psychologist", "psychologist")
-        self.role_combo.addItem("Administrator", "admin")
         form.addRow("Role:", self.role_combo)
         
         self.password_input = QLineEdit()
@@ -66,8 +75,21 @@ class CreateAccountDialog(QDialog):
         self.confirm_input.setPlaceholderText("Confirm password")
         self.confirm_input.setEchoMode(QLineEdit.EchoMode.Password)
         form.addRow("Confirm:", self.confirm_input)
+
+        self.admin_password_input = QLineEdit()
+        self.admin_password_input.setPlaceholderText("In-person admin authorization password")
+        self.admin_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        form.addRow("Admin Auth:", self.admin_password_input)
         
         layout.addLayout(form)
+
+        admin_note = QLabel(
+            "A physical administrator must enter the local admin authorization "
+            "password to create a psychologist account."
+        )
+        admin_note.setObjectName("cardSubtitle")
+        admin_note.setWordWrap(True)
+        layout.addWidget(admin_note)
         
         # Options
         self.require_change = QCheckBox("Require password change on first login")
@@ -105,9 +127,10 @@ class CreateAccountDialog(QDialog):
         name = self.name_input.text().strip()
         password = self.password_input.text()
         confirm = self.confirm_input.text()
+        admin_password = self.admin_password_input.text()
         
         # Validation
-        if not username or not name or not password:
+        if not username or not name or not password or not admin_password:
             self._show_error("Please fill in all required fields")
             return
         
@@ -119,17 +142,52 @@ class CreateAccountDialog(QDialog):
             self._show_error("Password must be at least 8 characters")
             return
         
+        if self.role_combo.currentData() != "psychologist":
+            self._show_error("Only psychologist account creation is available right now")
+            return
+
+        try:
+            initialize_database()
+            account = create_psychologist_account(
+                psychologist_username=username,
+                psychologist_password=password,
+                psychologist_display_name=name,
+                admin_master_password=admin_password,
+                authorization_note="Created from GUI account dialog",
+            )
+        except AccountExistsError as exc:
+            self._show_error(str(exc))
+            return
+        except AuthenticationError:
+            self._show_error("Invalid admin authorization password")
+            return
+        except AuthorizationError as exc:
+            self._show_error(str(exc))
+            return
+        except MissingDatabaseKeyError:
+            self._show_error("No database key is available on this machine")
+            return
+        except InvalidDatabaseKeyError:
+            self._show_error("The local database key could not unlock the database")
+            return
+        except DatabaseInitializationError as exc:
+            self._show_error(f"Database setup failed: {exc}")
+            return
+        except Exception as exc:
+            self._show_error(f"Unexpected account creation error: {exc}")
+            return
+
         data = {
-            'username': username,
+            'id': account.id,
+            'username': account.username,
             'email': email,
-            'name': name,
-            'role': self.role_combo.currentData(),
-            'role_display': self.role_combo.currentText(),
+            'name': account.display_name,
+            'role': account.role,
+            'role_display': "Psychologist",
             'require_password_change': self.require_change.isChecked(),
+            'active': account.is_active,
         }
-        
-        # TODO: Add password to data for backend (hash it first!)
-        
+
         self.account_created.emit(data)
         self.accept()
     
@@ -472,6 +530,7 @@ class AccountsPage(QWidget):
         edit_btn = QPushButton("Edit")
         edit_btn.setObjectName("tableButton")
         edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        edit_btn.clicked.connect(lambda checked, a=data: self._show_edit_dialog(a))
         actions_layout.addWidget(edit_btn)
 
         delete_btn = QPushButton("Delete")

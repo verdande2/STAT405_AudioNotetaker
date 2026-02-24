@@ -139,6 +139,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("TranscribeNotes - Clinical Documentation System")
         self.setMinimumSize(1200, 800)
+        self.current_account = None
 
         self._setup_ui()
         self._connect_signals()
@@ -218,16 +219,27 @@ class MainWindow(QMainWindow):
     def _on_navigation_changed(self, index: int):
         """Handle sidebar navigation changes."""
         # Map sidebar index to page index (offset by 1 for login page)
+        if index == 0:
+            self.dashboard_page.refresh_from_database()
+        if index == 2:
+            self.patients_page.refresh_patients()
         self.pages.setCurrentIndex(index + 1)
     
     def _on_login_success(self, username: str, role: str):
         """Handle successful login."""
+        self.current_account = self.login_page.current_account
         self.sidebar.set_user(username, role)
+        self.dashboard_page.set_authenticated_account(self.current_account)
+        self.patients_page.set_authenticated_account(self.current_account)
         self.sidebar.setVisible(True)
         self.pages.setCurrentIndex(1)  # Dashboard
     
     def _on_logout(self):
         """Handle logout request."""
+        self.current_account = None
+        self.login_page.current_account = None
+        self.dashboard_page.set_authenticated_account(None)
+        self.patients_page.set_authenticated_account(None)
         self._show_login()
     
     def _show_login(self):
