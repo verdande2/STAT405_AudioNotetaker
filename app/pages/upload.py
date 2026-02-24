@@ -362,10 +362,14 @@ class UploadPage(QWidget):
         main_win = self.window()
         summarizer = getattr(main_win, 'summarizer', None)
         if summarizer is None:
+            reason = getattr(main_win, 'summarizer_init_error', None)
+            message = "No summarizer model is available."
+            if reason:
+                message += f"\n\nReason:\n{reason}"
             QMessageBox.warning(
                 self,
                 "Missing Model",
-                "No summarizer model is available."
+                message
             )
         else:
             try:

@@ -143,6 +143,7 @@ class MainWindow(QMainWindow):
         # application-wide settings and helper objects
         self.settings = {}
         self.summarizer = None
+        self.summarizer_init_error = None
 
         self._setup_ui()
         self._connect_signals()
@@ -309,13 +310,14 @@ class MainWindow(QMainWindow):
         if self.summarizer is None or force_reload:
             try:
                 from app.lm.Summarizer import Summary
-            except ImportError:
+                model_path = self.settings.get('model_path')
+                # if path is somehow empty, let Summary figure out default
+                self.summarizer = Summary(path=model_path if model_path else None)
+                self.summarizer_init_error = None
+            except Exception as exc:
                 self.summarizer = None
+                self.summarizer_init_error = str(exc)
                 return
-
-            model_path = self.settings.get('model_path')
-            # if path is somehow empty, let Summary figure out default
-            self.summarizer = Summary(path=model_path if model_path else None)
 
     def get_summarizer(self):
         """Return the current summarizer instance (may be ``None``)."""

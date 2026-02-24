@@ -4,9 +4,16 @@ dummy summarizer class
 from __future__ import annotations
 
 from pathlib import Path
-from llama_cpp import Llama
 from langchain_text_splitters import RecursiveJsonSplitter
 import json
+
+try:
+    from llama_cpp import Llama
+except ModuleNotFoundError as exc:
+    raise ModuleNotFoundError(
+        "Missing optional dependency 'llama-cpp-python'. "
+        "Install it with `uv sync --extra local-llm` to enable local summarization."
+    ) from exc
 
 
 
@@ -17,22 +24,37 @@ class Summary:
                 code will look for a default model in the models/
                 directory (currently Qwen3-4B-Q5_0.gguf).
         """
-        # default location.
-        default_path = Path("models/Qwen3-4B-Q5_0.gguf")
+        # Resolve model paths relative to the repository root so launching the
+        # app from a different working directory still finds the model.
+        repo_root = Path(__file__).resolve().parents[2]
+        default_path = repo_root / "models" / "Qwen3-4B-Q5_0.gguf"
 
         if path is None:
-            path = str(default_path)
+            resolved_path = default_path
+        else:
+            candidate = Path(path).expanduser()
+            if candidate.is_absolute():
+                resolved_path = candidate
+            else:
+                cwd_candidate = Path.cwd() / candidate
+                repo_candidate = repo_root / candidate
+                if cwd_candidate.exists():
+                    resolved_path = cwd_candidate
+                else:
+                    resolved_path = repo_candidate
 
-        if not Path(path).exists():
+        if not resolved_path.exists():
             raise FileNotFoundError(
-                f"Summarizer model not found at '{path}'.\n"
+                f"Summarizer model not found.\n"
+                f"Configured path: '{path or 'models/Qwen3-4B-Q5_0.gguf'}'\n"
+                f"Resolved path: '{resolved_path}'\n"
                 "Please download the Qwen3-4B-Q5_0.gguf model and either pass ``path`` "
                 "explicitly or place it in the ``models/`` directory."
             )
 
         self.splitter = RecursiveJsonSplitter(max_chunk_size=2000, min_chunk_size=1000)
         self.llm = Llama(
-            model_path=path,
+            model_path=str(resolved_path),
             n_batch= 2048,
             n_context = 2048, #change max context size, default 2048
         )
