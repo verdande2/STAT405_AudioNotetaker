@@ -1,3 +1,0 @@
-Well, torch is version 2.10 and torchcodec is version 0.10, and according to the compatability table on https://github.com/meta-pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec this should work with python versions 3.10 - 3.14 inclusive...
-
-That means with current torch/torchcodec versions, my python versions are limited to >= 3.10 and <= 3.14

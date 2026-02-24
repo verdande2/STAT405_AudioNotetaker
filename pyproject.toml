@@ -19,7 +19,6 @@ dependencies = [
     "datasets>=4.5.0",
     "diagrams>=0.25.1",
     "faker>=40.1.2",
-    "faster-whisper>=1.2.1",
     "hf>=1.4.0",
     "huggingface-hub>=1.4.0",
     "ipydatagrid>=1.4.0",

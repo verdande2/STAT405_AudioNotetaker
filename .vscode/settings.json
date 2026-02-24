@@ -2,4 +2,7 @@
     "gitflow.disableOnRepo": true,
     "notebook.diff.ignoreOutputs": true,
     "notebook.diff.ignoreMetadata": true,
+    "editor.folding": true,
+    "editor.foldingHighlight": true,
+    "editor.foldingStrategy": "auto",
 }

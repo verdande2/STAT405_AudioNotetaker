@@ -1,0 +1,5 @@
+Name: torch
+Version: 2.10.0
+Location: Z:\code\STAT405_AudioNotetaker\.venv\Lib\site-packages
+Requires: filelock, fsspec, jinja2, networkx, setuptools, sympy, typing-extensions
+Required-by: asteroid-filterbanks, julius, lightning, pyannote-audio, pytorch-lightning, pytorch-metric-learning, torch-audiomentations, torch-pitch-shift, torchaudio, torchmetrics
