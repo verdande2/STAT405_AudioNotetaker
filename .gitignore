@@ -55,6 +55,9 @@ cover/
 *.mo
 *.pot
 
+# model folder
+models
+
 # Django stuff:
 *.log
 local_settings.py
@@ -143,6 +146,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.vscode
 
 # Spyder project settings
 .spyderproject

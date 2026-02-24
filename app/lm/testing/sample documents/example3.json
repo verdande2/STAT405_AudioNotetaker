@@ -1,0 +1,164 @@
+[
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [0.0, 12.0],
+        "text": "Hello. I'm here to support you today. How are you feeling right now?",
+        "reason": "opening"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [12.0, 35.0],
+        "text": "I feel really nervous. My hands are shaking a little bit. I don't know if I should talk about this.",
+        "reason": "initial-disclosure"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [35.0, 48.0],
+        "text": "It's okay to take your time. What would you like to share first?",
+        "reason": "validation"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [48.0, 72.5],
+        "text": "I've been really worried about food lately. I think about it all the time—how much I should eat, if I'm eating enough, what I'll do if I don't feel like eating at all.",
+        "reason": "first-food-related-anxiety"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [72.5, 86.0],
+        "text": "That sounds like a lot of pressure. How does that make you feel physically?",
+        "reason": "exploring-physical-effects"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [86.0, 120.5],
+        "text": "I get really tense in my stomach. Sometimes I feel like I can't breathe if I'm around food or people eating. It's like my body is fighting me.",
+        "reason": "physical-symptoms"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [120.5, 134.0],
+        "text": "That makes sense. What happens when you try to eat in public?",
+        "reason": "trigger-question"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [134.0, 168.5],
+        "text": "I get so scared I'll make a mistake—like choke or something. My mind goes blank. I'd rather just sit alone and not eat at all.",
+        "reason": "avoidance-behavior"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [168.5, 182.0],
+        "text": "What about meals with family or friends? Does that feel harder?",
+        "reason": "expanding-situations"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [182.0, 215.0],
+        "text": "Yeah. I'd rather not go. Even if they're trying to be nice, it feels like a test—like they'll judge me for what I eat or don't eat.",
+        "reason": "social-isolation"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [215.0, 230.0],
+        "text": "What if you just tried one small thing—like eating with them for five minutes?",
+        "reason": "gentle-proposal"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [230.0, 265.0],
+        "text": "I don't know. I feel like it'll be too much. What if I mess up? Or what if they see how scared I am?",
+        "reason": "hesitation"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [265.0, 280.0],
+        "text": "What would it feel like to just try? Even if you don't do it perfectly.",
+        "reason": "low-pressure-challenge"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [280.0, 315.0],
+        "text": "I. I don't know. It feels like too much to think about right now. Maybe I should just sit with the feeling for a little while.",
+        "reason": "pacing"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [315.0, 328.0],
+        "text": "That's okay. What if we start small? Like, what's one thing you could do today to take a step forward?",
+        "reason": "action-plan"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [328.0, 365.0],
+        "text": "I don't know. Maybe just sitting at the table for five minutes without eating? Just to see how it feels.",
+        "reason": "proposed-step"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [365.0, 380.0],
+        "text": "That's a good start. What if we practice that today? Even if you don't eat, just sitting there could help.",
+        "reason": "supportive-nudge"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [380.0, 415.0],
+        "text": "I. I don't know if I can do that alone. It feels too big. What if I mess up?",
+        "reason": "relapse-anxiety"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [415.0, 430.0],
+        "text": "It's okay to feel that way. What if we break it down even smaller? Just one minute at a time?",
+        "reason": "incremental-pacing"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [430.0, 465.0],
+        "text": "One minute. Okay. I'll try that. But what if I still feel bad after?",
+        "reason": "follow-up-question"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [465.0, 480.0],
+        "text": "Then we can talk about it afterward. What's one thing you'd like to say if you feel judged?",
+        "reason": "empathy-building"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [480.0, 512.0],
+        "text": "I don't know. Maybe just ‘I'm trying'? Or ‘This is hard for me.'",
+        "reason": "self-compassion"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [512.0, 530.0],
+        "text": "That's enough to start with. What if we write that down? So you can remind yourself later.",
+        "reason": "grounding"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [530.0, 560.0],
+        "text": "Yeah. I could do that. Maybe tomorrow?",
+        "reason": "next-step-plan"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [560.0, 575.0],
+        "text": "Tomorrow is fine. What's one thing you'd like to focus on first?",
+        "reason": "closing-question"
+    },
+    {
+        "speaker": "PATIENT",
+        "timestamp": [575.0, 610.0],
+        "text": "Just. just sitting at the table for a minute. And writing down what I'd say if I feel judged.",
+        "reason": "final-commitment"
+    },
+    {
+        "speaker": "THERAPIST",
+        "timestamp": [610.0, 625.0],
+        "text": "That sounds like a plan. You've got this. If you need to stop or change anything, that's okay too.",
+        "reason": "closing-support"
+    }
+]
