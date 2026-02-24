@@ -3,6 +3,11 @@ Patient Detail Page for TranscribeNotes Application
 Displays individual patient profile with session history
 """
 
+from __future__ import annotations
+
+from datetime import datetime
+from pathlib import Path
+
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QFrame, QScrollArea, QTabWidget,
@@ -10,6 +15,16 @@ from PySide6.QtWidgets import (
     QPlainTextEdit
 )
 from PySide6.QtCore import Qt, Signal
+
+from app.db import (
+    AuthorizationError,
+    DatabaseInitializationError,
+    InvalidDatabaseKeyError,
+    MissingDatabaseKeyError,
+    initialize_database,
+    list_client_profiles,
+    list_session_records,
+)
 
 
 class SessionItem(QFrame):
@@ -77,6 +92,9 @@ class PatientDetailPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_patient_id = None
+        self._current_account = None
+        self._session_records_by_id = {}
+        self._current_patient_notes = ""
         self._setup_ui()
     
     def _setup_ui(self):
@@ -107,7 +125,7 @@ class PatientDetailPage(QWidget):
         self.patient_name = QLabel("Patient Name")
         self.patient_name.setObjectName("pageTitle")
         
-        self.patient_mrn = QLabel("MRN: 00000")
+        self.patient_mrn = QLabel("Local patient profile")
         self.patient_mrn.setObjectName("pageDescription")
         
         title_info.addWidget(self.patient_name)
@@ -243,6 +261,103 @@ class PatientDetailPage(QWidget):
         splitter.setSizes([350, 650])
         
         layout.addWidget(splitter)
+
+    def set_authenticated_account(self, account):
+        """Set signed-in account context used for loading patient/session data."""
+        self._current_account = account
+        if account is None:
+            self.current_patient_id = None
+            self.patient_name.setText("Patient Name")
+            self.patient_mrn.setText("Local patient profile")
+            self._clear_session_items()
+            self._reset_detail_panels()
+            self.session_count.setText("0 sessions")
+
+    def _clear_session_items(self):
+        while self.sessions_layout.count() > 1:
+            item = self.sessions_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+    def _reset_detail_panels(self):
+        self._session_records_by_id = {}
+        self.summary_text.clear()
+        self.transcript_text.clear()
+        self.notes_text.clear()
+        self.metadata_content.setText("Select a session to view details")
+
+    def _format_patient_name(self, first_name: str | None, last_name: str | None) -> str:
+        parts = [part for part in [first_name, last_name] if part]
+        return " ".join(parts) if parts else "Unnamed Patient"
+
+    def _format_session_date(self, created_at: str | None, *, long_format: bool = False) -> str:
+        if not created_at:
+            return "Unknown Date"
+        for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
+            try:
+                dt = datetime.strptime(created_at, fmt)
+                return dt.strftime("%B %d, %Y") if long_format else dt.strftime("%b %d, %Y")
+            except ValueError:
+                continue
+        return created_at
+
+    def _build_session_item_payload(self, session) -> dict:
+        summary_preview = (session.summary_text or "").strip()
+        if not summary_preview:
+            transcript_preview = (session.transcript_text or "").strip()
+            summary_preview = transcript_preview or "No transcript or summary stored yet."
+
+        return {
+            "id": session.id,
+            "date": self._format_session_date(session.created_at, long_format=True),
+            "duration": "Duration TBD",
+            "status": "Status TBD",
+            "summary_preview": summary_preview,
+        }
+
+    def _populate_session_history(self, sessions):
+        self._clear_session_items()
+        self._session_records_by_id = {session.id: session for session in sessions}
+        self.session_count.setText(f"{len(sessions)} session{'s' if len(sessions) != 1 else ''}")
+
+        if not sessions:
+            empty_label = QLabel("No sessions have been added for this patient yet.")
+            empty_label.setObjectName("cardSubtitle")
+            empty_label.setWordWrap(True)
+            self.sessions_layout.insertWidget(self.sessions_layout.count() - 1, empty_label)
+            return
+
+        for session in sessions:
+            item = SessionItem(self._build_session_item_payload(session))
+            item.clicked.connect(self._on_session_selected)
+            self.sessions_layout.insertWidget(self.sessions_layout.count() - 1, item)
+
+    def _show_patient_overview(self, patient):
+        self.patient_name.setText(
+            self._format_patient_name(patient.first_name, patient.last_name)
+        )
+        self.patient_mrn.setText("Local patient profile")
+        self._current_patient_notes = (patient.notes or "").strip()
+        self.notes_text.setPlainText(
+            "Clinical session notes are not stored in the local database yet.\n\n"
+            "Patient profile notes:\n"
+            f"{self._current_patient_notes or 'No patient notes recorded.'}"
+        )
+        self.metadata_content.setText(
+            "Patient Details\n"
+            f"Name: {self.patient_name.text()}\n"
+            "Notes:\n"
+            f"{self._current_patient_notes or 'No patient notes recorded.'}"
+        )
+
+    def _show_load_error(self, message: str):
+        self.patient_name.setText("Patient")
+        self.patient_mrn.setText("Unable to load patient details")
+        self._current_patient_notes = ""
+        self._clear_session_items()
+        self._reset_detail_panels()
+        self.session_count.setText("0 sessions")
+        self.metadata_content.setText(message)
     
     def load_patient(self, patient_id: int):
         """Load patient data from backend.
@@ -251,24 +366,36 @@ class PatientDetailPage(QWidget):
             patient_id: ID of patient to load
         """
         self.current_patient_id = patient_id
-        
-        # TODO: Hook up to backend endpoint
-        # For skeleton, use sample data
-        
-        sample_patients = {
-            1: {"name": "John Doe", "mrn": "12345"},
-            2: {"name": "Maria Santos", "mrn": "12346"},
-            3: {"name": "Alex Rodriguez", "mrn": "12347"},
-            4: {"name": "Kim Thompson", "mrn": "12348"},
-        }
-        
-        patient = sample_patients.get(patient_id, {"name": "Unknown", "mrn": "00000"})
-        
-        self.patient_name.setText(patient['name'])
-        self.patient_mrn.setText(f"MRN: {patient['mrn']}")
-        
-        # Load sample sessions
-        self._load_sample_sessions(patient_id)
+        self._reset_detail_panels()
+
+        account = self._current_account
+        if account is None or getattr(account, "role", None) != "psychologist":
+            self._show_load_error("Sign in as a psychologist to view patient details.")
+            return
+
+        try:
+            initialize_database()
+            patients = list_client_profiles(account.id)
+            patient = next((p for p in patients if p.id == patient_id), None)
+            if patient is None:
+                self._show_load_error("This patient record was not found for the signed-in account.")
+                return
+            sessions = list_session_records(account.id, client_profile_id=patient_id)
+        except AuthorizationError as exc:
+            self._show_load_error(str(exc))
+            return
+        except (MissingDatabaseKeyError, InvalidDatabaseKeyError) as exc:
+            self._show_load_error(f"Database error: {exc}")
+            return
+        except DatabaseInitializationError as exc:
+            self._show_load_error(f"Database setup failed: {exc}")
+            return
+        except Exception as exc:
+            self._show_load_error(f"Failed to load patient details: {exc}")
+            return
+
+        self._show_patient_overview(patient)
+        self._populate_session_history(sessions)
     
     def _load_sample_sessions(self, patient_id: int):
         """Load sample session data."""
@@ -318,6 +445,38 @@ class PatientDetailPage(QWidget):
     
     def _on_session_selected(self, session_id: int):
         """Handle session selection."""
+        session = self._session_records_by_id.get(session_id)
+        if session is not None:
+            summary_text = (session.summary_text or "").strip()
+            transcript_text = (session.transcript_text or "").strip()
+            language = (session.detected_language or "").strip() or "Unknown / not detected"
+            source_audio = (
+                Path(session.source_audio_path).name
+                if session.source_audio_path
+                else "Unknown source"
+            )
+
+            self.summary_text.setPlainText(
+                summary_text or "No summary has been generated for this session yet."
+            )
+            self.transcript_text.setPlainText(
+                transcript_text or "No transcript has been stored for this session yet."
+            )
+            self.notes_text.setPlainText(
+                "Clinical session notes are not stored in the local database yet.\n\n"
+                "Patient profile notes:\n"
+                f"{self._current_patient_notes or 'No patient notes recorded.'}"
+            )
+            self.metadata_content.setText(
+                f"Date: {self._format_session_date(session.created_at, long_format=True)}\n"
+                "Duration: Duration TBD\n"
+                f"Audio Language: {language}\n"
+                f"Source Audio: {source_audio}\n"
+                f"Transcript Stored: {'Yes' if transcript_text else 'No'}\n"
+                f"Summary Stored: {'Yes' if summary_text else 'No'}"
+            )
+            return
+
         # TODO: Hook up to backend endpoint
         
         # For skeleton, show sample data

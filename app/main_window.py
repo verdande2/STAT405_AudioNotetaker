@@ -243,6 +243,7 @@ class MainWindow(QMainWindow):
         self.sidebar.set_user(username, role)
         self.dashboard_page.set_authenticated_account(self.current_account)
         self.patients_page.set_authenticated_account(self.current_account)
+        self.patient_detail_page.set_authenticated_account(self.current_account)
         self.transcripts_page.set_authenticated_account(self.current_account)
         self.accounts_page.set_authenticated_account(self.current_account)
         self.sidebar.setVisible(True)
@@ -255,6 +256,7 @@ class MainWindow(QMainWindow):
         self.login_page.current_account = None
         self.dashboard_page.set_authenticated_account(None)
         self.patients_page.set_authenticated_account(None)
+        self.patient_detail_page.set_authenticated_account(None)
         self.transcripts_page.set_authenticated_account(None)
         self.accounts_page.set_authenticated_account(None)
         self._show_login()
@@ -266,6 +268,7 @@ class MainWindow(QMainWindow):
     
     def _on_view_patient(self, patient_id: int):
         """Handle request to view patient details."""
+        self.patient_detail_page.set_authenticated_account(self.current_account)
         self.patient_detail_page.load_patient(patient_id)
         self.pages.setCurrentIndex(7)  # Patient detail page
     
@@ -282,6 +285,7 @@ class MainWindow(QMainWindow):
         self.sidebar.set_user(account.display_name, role)
         self.dashboard_page.set_authenticated_account(account)
         self.patients_page.set_authenticated_account(account)
+        self.patient_detail_page.set_authenticated_account(account)
         self.transcripts_page.set_authenticated_account(account)
         self.accounts_page.set_authenticated_account(account)
 
