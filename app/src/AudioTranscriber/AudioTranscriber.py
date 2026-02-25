@@ -62,7 +62,24 @@ class AudioTranscriber():
         
         # set the internal "private" transcription variable
         # self._transcription = LLM.pipeline.result # or something like that
-        self._transcription = {"lang": "en_US", "text": "JSON of transcripted words here!"}
+        self._transcription = {
+            "lang": "en_US",
+            "model": "whisper-small-v2",
+            "date_created": "2026-01-01 00:00:00",
+            "total_duration": 12345,
+            "segments": [
+                {
+                    "speaker": "PATIENT",
+                    "timestamp": [0, 3],
+                    "text": "I've been having trouble focusing after lunch and often drift to other thoughts.",
+                },
+                {
+                    "speaker": "THERAPIST",
+                    "timestamp": [3, 6],
+                    "text": "Have you tried short breaks or a timed work pattern like Pomodoro?",
+                },
+            ],
+        }
         
         # return JSON as default
         return self._transcription
