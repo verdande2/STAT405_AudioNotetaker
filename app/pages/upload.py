@@ -528,8 +528,7 @@ class UploadPage(QWidget):
         
         print(f"Finished processing file: {file_path} successfully!") if DEBUG else None
         print(f"Final transcription JSON with added summary and metadata: {transcription}") if DEBUG else None
-        
-    
+           
     def _start_processing(self):
         """Start processing queued files."""
         

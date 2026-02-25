@@ -284,8 +284,7 @@ class DashboardPage(QWidget):
             self.pending_review.update_value(str(stats['pending_review']))
         if 'processing' in stats:
             self.processing.update_value(str(stats['processing']))
-            
-            
+             
     def _upload_audio_handle_click(self):
         """" Handles a click on the upload audio button """
         # TODO: redirect to pages/upload, figure out how to redirect in PySide6!
@@ -297,7 +296,6 @@ class DashboardPage(QWidget):
             # main_win.sidebar.setVisible(True) # if it isn't already visible, show it
             # main_win.pages.setCurrentIndex(2) # ID 2 should be upload page # TODO better way to set active page? by route name? by label/name? by key/index?
             # main_win.set_active_page(2) # ID 2 should be upload page # TODO better way to set active page? by route name? by label/name? by key/index?
-
 
     def _new_patient_handle_click(self):
         

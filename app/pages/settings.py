@@ -120,7 +120,6 @@ class SettingsPage(QWidget):
         trans_form.addRow("Input Language:", self.default_language)
         
         self.output_language = NoScrollComboBox()
-        self.output_language.addItem("English", "en")
         for language in self._available_languages:
             self.output_language.addItem(language["name"], language["ISO_code"])
         trans_form.addRow("Output Language:", self.output_language)

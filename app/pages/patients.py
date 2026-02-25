@@ -21,15 +21,17 @@ class CreateNewPatientDialog(QDialog):
     """Dialog for creating a new patient profile."""
     
     patient_created = Signal(dict)  # Patient data
-    _patient_data = dict() # patient data dict to create and store in db
+    _patient_data = dict() # func scope patient data dict to create and store in db later
     
     def __init__(self, parent=None):
+        
         super().__init__(parent)
-        self.setWindowTitle("Create Patient Profile")
+        self.setWindowTitle("Create New Patient Profile")
         self.setMinimumWidth(500)
         self._setup_ui()
     
     def _setup_ui(self):
+        
         layout = QVBoxLayout(self)
         layout.setContentsMargins(32, 32, 32, 32)
         layout.setSpacing(24)
@@ -86,7 +88,7 @@ class CreateNewPatientDialog(QDialog):
         layout.addLayout(buttons_layout)
     
     def _handle_create_patient(self):
-        """Validate and emit patient creation."""
+        """Validate new patient creation and emit patient creation event."""
         
         # TODO move validation and all sanitization etc to model, make it PHat with a capital PH
         data = {
@@ -110,7 +112,7 @@ class CreateNewPatientDialog(QDialog):
         # new_patient = Patient(self._patient_data)
         # new_patient.save_to_db() or what not
         
-        # pass confirmation or error to dialog
+        # TODO pass confirmation or error to dialog
         self.accept()
 
 
@@ -119,9 +121,9 @@ class CreateEditPatientDialog(QDialog):
     
     patient_edited = Signal(dict)  # Patient edited event
     
-    _patient_data = dict() # patient data dict to edit
+    _local_patient_data = dict() # patient data dict to edit
     
-    def __init__(self, patient_data: dict, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         
         self._ensure_local_patient_data()
@@ -133,12 +135,11 @@ class CreateEditPatientDialog(QDialog):
         # now that the ui is setup, populate the form fields with the current patient data
         self._load_patient_data_into_edit_dialog()
         
-        self.setWindowTitle(f"Edit Patient Profile: {self._patient_data["first_name"]} {self._patient_data['last_name']}") # TODO make a class model for patients, do validation and all that in fat models, leave our controllers skinny and just doing the handoffs and referrals and whatnot
+        self.setWindowTitle(f"Edit Patient Profile: {self._local_patient_data["first_name"]} {self._local_patient_data['last_name']}") # TODO make a class model for patients, do validation and all that in fat models, leave our controllers skinny and just doing the handoffs and referrals and whatnot
         
         
     def _load_patient_data_into_edit_dialog(self):
         """Load patient data from dict and populate the inputs' text/plaintext as needed."""
-        self._ensure_local_patient_data()
         
         # set the text/plaintext fields of all the related form inputs
         self.mrn_input.setText(self._patient_data['mrn'])
@@ -151,8 +152,6 @@ class CreateEditPatientDialog(QDialog):
         # TODO add more fields as needed
     
     def _setup_ui(self):
-        
-        self._ensure_local_patient_data()
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(32, 32, 32, 32)
@@ -205,7 +204,7 @@ class CreateEditPatientDialog(QDialog):
         edit_btn.setObjectName("primaryButton")
         edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         edit_btn.clicked.connect(
-            lambda checked, pid=self._patient_data['id']: self._handle_edit_patient() # view single patient page (passed id)
+            lambda checked, pid=self._local_patient_data['id']: self._handle_edit_patient() # view single patient page (passed id)
         )
         buttons_layout.addWidget(edit_btn)
         
@@ -233,7 +232,7 @@ class CreateEditPatientDialog(QDialog):
         self.accept()
         
     def _ensure_local_patient_data(self):
-        """Ensure local patient data is available."""
+        """Ensure local patient data is available to the Edit Patient Dialog class."""
         
         if not self._patient_data:
             print(f"Edit Patient Dialog Class: No local patient data found to edit!") if DEBUG else None
@@ -248,18 +247,33 @@ class PatientsPage(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        
         self._setup_ui()
         
-        # self.window()._ensure_patient_dataset() # TODO FIX ME
+        main_win = self.window()
             
-        # patient_dataset = getattr(self.window(), "_patient_dataset")
-        # if not patient_dataset:
-        #     print(f"Patients Page: No patient dataset found to load! Can't init patients page! Loading sample dataset for now!") if DEBUG else None
+        patient_dataset = getattr(self.window(), "_patient_dataset")
+        if not patient_dataset:
+            print(f"Patients Page: No patient dataset found to load! Can't init patients page! Loading sample dataset for now!") if DEBUG else None
             
-        #     # Load sample data for now # TODO swap to /real/ data from db query
-        #     self._load_sample_dataset()
+            # Load sample data for now # TODO swap to /real/ data from db query
+            self._load_sample_patient_dataset()
             
-        #     # self._load_patient_dataset_from_db()
+        else:
+            try:
+                self._load_patient_dataset_from_db()
+                print(f"Patients Page: Patient dataset loaded from db successfully!")
+                
+            except Exception as e:
+                print(f"Patients Page: Error loading patient dataset from db! {e}")
+                raise e # pass it on down
+        
+        
+        main_win._ensure_patient_dataset() # make sure we populated the patient dataset in the main window object
+        
+        # populate dat table
+        self._populate_table(getattr(main_win, "_patient_dataset")) # populate table with patient data    
+            
     
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -353,7 +367,7 @@ class PatientsPage(QWidget):
         pagination_layout = QHBoxLayout()
         pagination_layout.addStretch()
         
-        self.page_label = QLabel("Showing 1-10 of 42 patients")
+        self.page_label = QLabel("Showing 1-10 of 42 patients") # TODO update this to show dynamic numbers!
         self.page_label.setObjectName("cardSubtitle")
         pagination_layout.addWidget(self.page_label)
         
@@ -373,11 +387,11 @@ class PatientsPage(QWidget):
         
         layout.addWidget(content)
     
-    def _load_sample_dataset(self):
-        """Load sample patient data for skeleton."""
+    def _load_sample_patient_dataset(self):
+        """Load sample patient dataset for skeleton."""
         
         # TODO implement me, connect to db for retrieval!
-        sample_patients = [
+        _sample_patient_dataset = [
             {"id": 1, "mrn": "12345", "name": "John Doe", "sessions": 12, "last_session": "Jan 28, 2026"},
             {"id": 2, "mrn": "12346", "name": "Maria Santos", "sessions": 8, "last_session": "Jan 27, 2026"},
             {"id": 3, "mrn": "12347", "name": "Alex Rodriguez", "sessions": 15, "last_session": "Jan 26, 2026"},
@@ -389,12 +403,7 @@ class PatientsPage(QWidget):
         ]
         
         main_win = self.window()
-        patient_dataset = sample_patients if DEBUG else getattr(self.window(), "_patient_dataset") # get real data if not in DEBUG mode
-        
-        setattr(main_win, "_patient_dataset", patient_dataset)
-        
-        # populate dat table
-        self._populate_table(getattr(main_win, "_patient_data")) # populate table with patient data
+        setattr(main_win, "_patient_dataset", _sample_patient_dataset)
     
     def _populate_table(self, patients: dict):
         """Populate table with patient data."""
@@ -574,9 +583,16 @@ class PatientsPage(QWidget):
     def _load_patient_data_into_table(self):
         """Load patients from backend."""
         
-        patient_dataset = getattr(self.window(), "_patient_dataset")
-        if not patient_dataset:
-            print(f"Patients Load Patient Data Into Table: No patient dataset found to load! Can't init load patient dataset into table!!") if DEBUG else None
-            raise ValueError("Patients Load Patient Data Into Table: No patient dataset found to load! Can't init load patient dataset into table!!")
+        main_win = self.window()
+        main_win._ensure_patient_dataset()
+        
         # TODO: Hook up to backend endpoint, basically a SELECT * FROM patients WHERE owner_id = current_user_id ORDER BY date DESC kinda query
-        self._populate_table(getattr(self.window(), "_patient_data")) # populate table with patient data
+        self._populate_table(getattr(main_win, "_patient_data")) # populate table with patient data
+
+
+    def _ensure_local_patient_data(self):
+        """Ensure local patient data (singular!) is available for use for edit and others."""
+        
+        if not self._patient_data:
+            print(f"Patients Page Class: No local patient data found to edit!") if DEBUG else None
+            raise ValueError("Patients Page Class: No local patient data found to edit!")

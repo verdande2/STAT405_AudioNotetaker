@@ -343,13 +343,9 @@ class MainWindow(QMainWindow):
         return self.summarizer
 
     def _ensure_patient_dataset(self):
-        """Ensure patient dataset is available."""
+        """Ensure patient dataset is available from the main window object (this is the master object for containing all patient data)."""
         
         if not self._patient_dataset:
             print(f"Main Window: No patient dataset found! Can't init!") if DEBUG else None
             raise ValueError("Main Window: No patient dataset found! Can't init! ABORT!")
-            
-            
-            
-            
-            
+        
