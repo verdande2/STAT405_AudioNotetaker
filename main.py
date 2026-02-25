@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Audio to Text Transcription and Note Taking Software
 Main application entry point
