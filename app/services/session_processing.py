@@ -14,6 +14,10 @@ from pathlib import Path
 from typing import Callable
 
 from app.db import create_session_record
+from app.services.placeholder_transcript import (
+    load_placeholder_transcript_json,
+    load_placeholder_transcript_text,
+)
 
 try:
     from app.lm.Summarizer import Summary as LlamaSummary
@@ -44,6 +48,19 @@ class AudioSessionProcessor:
 
     def __init__(self, *, model_path: str | Path | None = None):
         self._model_path = Path(model_path) if model_path else self._resolve_default_model_path()
+        self._summarizer = None
+
+    def set_summarizer(self, summarizer) -> None:
+        """Inject a preloaded summarizer instance from the UI layer."""
+        self._summarizer = summarizer
+
+    def set_model_path(self, model_path: str | Path | None) -> None:
+        """Update the model path used if the processor needs to lazy-load."""
+        self._model_path = Path(model_path) if model_path else None
+        if self._summarizer is None:
+            return
+        # If the UI swaps models, force a fresh lazy load on next request unless
+        # a new instance is explicitly injected via ``set_summarizer``.
         self._summarizer = None
 
     def process_audio_file(
@@ -88,58 +105,37 @@ class AudioSessionProcessor:
         Replace this implementation with actual STT while preserving the return
         shape so the summarization and persistence stages do not need rewiring.
         """
-
-        filename = Path(source_audio_path).name
-        stem = Path(source_audio_path).stem.replace("_", " ").replace("-", " ").strip()
-        topic_hint = stem or "uploaded session"
-
-        transcript_json = {
-            "0": {
-                "speaker": "Therapist",
-                "text": "This is a placeholder transcript until speech-to-text is integrated.",
-            },
-            "1": {
-                "speaker": "Patient",
-                "text": (
-                    f"The uploaded audio file was '{filename}'. "
-                    f"Working topic hint from the filename is '{topic_hint}'."
-                ),
-            },
-            "2": {
-                "speaker": "Therapist",
-                "text": "A full transcript will be inserted into this pipeline once STT is added.",
-            },
-        }
-
-        transcript_text = (
-            "[Placeholder transcript - speech-to-text not integrated yet]\n"
-            f"Source audio file: {filename}\n"
-            f"Filename topic hint: {topic_hint}\n\n"
-            "Therapist: This is a placeholder transcript until speech-to-text is integrated.\n"
-            f"Patient: The uploaded audio file was '{filename}'. Working topic hint from the filename is '{topic_hint}'.\n"
-            "Therapist: A full transcript will be inserted into this pipeline once STT is added.\n"
-        )
+        transcript_json = load_placeholder_transcript_json()
+        transcript_text = load_placeholder_transcript_text()
 
         return TranscriptStageOutput(
             transcript_json=transcript_json,
             transcript_text=transcript_text,
-            detected_language="pending-stt",
+            detected_language="en_US",
         )
 
     def summarize_transcript(self, *, transcript_json: dict, transcript_text: str) -> str:
         """Generate a summary using the local LLM summarizer when available."""
+        # Temporary behavior: force a shared placeholder transcript into every
+        # summarizer call until the real transcription stage is integrated.
+        try:
+            summarizer_input_json = load_placeholder_transcript_json()
+            summarizer_input_text = load_placeholder_transcript_text()
+        except Exception:
+            summarizer_input_json = transcript_json
+            summarizer_input_text = transcript_text
 
         summarizer = self._get_summarizer()
         if summarizer is None:
-            return self._fallback_summary(transcript_text)
+            return self._fallback_summary(summarizer_input_text)
 
         try:
-            raw_output = summarizer.SummarizeSingle(transcript=transcript_json)
+            raw_output = summarizer.SummarizeSingle(transcript=summarizer_input_json)
         except Exception:
-            return self._fallback_summary(transcript_text)
+            return self._fallback_summary(summarizer_input_text)
 
         summary_text = self._extract_summary_text(raw_output)
-        return summary_text or self._fallback_summary(transcript_text)
+        return summary_text or self._fallback_summary(summarizer_input_text)
 
     def _get_summarizer(self):
         if self._summarizer is not None:

@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QPushButton, QFrame, QScrollArea, QComboBox,
     QProgressBar, QFileDialog, QListWidget, QListWidgetItem,
     QTextEdit, QSizePolicy, QMessageBox
-    QTextEdit, QSizePolicy, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, QMimeData
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
@@ -21,6 +20,7 @@ from app.db import (
     MissingDatabaseKeyError,
     list_client_profiles,
 )
+from app.services.placeholder_transcript import load_placeholder_transcript_json
 
 import json, random
 from datetime import datetime
@@ -465,7 +465,10 @@ class UploadPage(QWidget):
                     }
 
             try:
-                result = summarizer.SummarizeSingle(transcript=transcription)
+                # Temporary: force a shared placeholder transcript into all
+                # summarizer calls until the transcriber is implemented.
+                summarizer_input = load_placeholder_transcript_json()
+                result = summarizer.SummarizeSingle(transcript=summarizer_input)
                 # ensure we have plain text
                 if isinstance(result, dict):
                     summary_text = result.get('choices', [{}])[0].get('text', '')
@@ -583,37 +586,21 @@ class UploadPage(QWidget):
 
         # Mark all files as processing
         for widget in self.file_widgets.values():
-        
-        # process the file queue, one at a time, updating corresponding ui widget as we go
-        for file_path, widget in zip(self.queued_files, self.file_widgets.values()): # ASSUMING the order of queued files matches the order of widgets, TODO VERIFY THIS
-            print(f"Processing file: {file_path}") if DEBUG else None
-            
             widget.set_processing()
         
+        # process the file queue, one at a time, updating corresponding ui widget as we go
         self.upload_started.emit(list(self.queued_files), int(patient_id))
-            
-            self.upload_started.emit(self.queued_files, patient_id) # not sure if this is an emitted event for ALL of the queued files, or just singles and too tired to determine this at 3:52 am 
-            
-            try:
-                self._process_file(file_path)
-                
-                widget.set_complete()  # mark files complete so the user sees something happen
-                print(f"Finished processing file: {file_path} successfully!") if DEBUG else None
-                
-            except Exception as e:
-                # TODO handle errors in a better way
-                self.set_file_progress(file_path, progress=0)  # epic fail
-                self.set_file_error(
-                    file_path, "Unknown error processing file: ERROR CODE 0xDEADBEEF"
-                )
-                print(f"Processing file: {file_path} failed with error: {e}") if DEBUG else None
-                raise e # pass one down, pass it around, 99 exceptions of beer on the ... wall?
+        # The main window handles the actual processing pipeline and DB writes
+        # (including storing the model's returned summary on the session
+        # record). Do not run the legacy local `_process_file()` flow here or
+        # we will double-process uploads and bypass the DB-backed path.
+        return
             
         # TODO: Hook up to backend endpoint
         
         # For skeleton demo, simulate progress
         # In production, this would be replaced with actual backend calls
-        # note: moved calls to update file progress and error and progress bars to the _process_file method above
+        # note: moved calls to update file progress and error and progress bars to the main window handler
     
     def set_file_progress(self, file_path: str, progress: int):
         """Update progress for a specific file."""

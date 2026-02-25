@@ -344,12 +344,16 @@ class MainWindow(QMainWindow):
                 self.upload_page.set_file_progress(file_path, 5)
                 QApplication.processEvents()
 
-                self.audio_processor.process_audio_file(
+                processed_result = self.audio_processor.process_audio_file(
                     psychologist_account_id=account.id,
                     client_profile_id=patient_id,
                     source_audio_path=file_path,
                     progress_callback=lambda value, fp=file_path: self._update_upload_progress(fp, value),
                 )
+                # `process_audio_file()` persists `summary_text` to the session
+                # record before returning. Keeping the result here makes it easy
+                # to add UI hooks that use the generated summary later.
+                _ = processed_result.summary_text
                 self.upload_page.set_file_complete(file_path)
                 QApplication.processEvents()
                 successes += 1
@@ -369,7 +373,7 @@ class MainWindow(QMainWindow):
                 failures.append((file_path, message))
                 QApplication.processEvents()
 
-        self._refresh_after_upload_processing()
+        self._refresh_after_upload_processing(patient_id=patient_id)
         self.upload_page.finish_processing(clear_completed=(successes > 0 and not failures))
 
         if failures:
@@ -396,11 +400,17 @@ class MainWindow(QMainWindow):
         self.upload_page.set_file_progress(file_path, value)
         QApplication.processEvents()
 
-    def _refresh_after_upload_processing(self):
+    def _refresh_after_upload_processing(self, *, patient_id: int | None = None):
         self.dashboard_page.refresh_from_database()
         self.patients_page.refresh_patients()
         self.transcripts_page.refresh_transcripts()
         self.upload_page.refresh_patients()
+        if (
+            patient_id is not None
+            and getattr(self.patient_detail_page, "current_patient_id", None) == patient_id
+            and self.current_account is not None
+        ):
+            self.patient_detail_page.load_patient(patient_id)
 
     def _load_default_settings(self):
         """Populate ``self.settings`` with every key the settings page uses.
@@ -432,6 +442,7 @@ class MainWindow(QMainWindow):
             'confirm_delete': True,
             'show_notifications': True,
         }
+        self._sync_audio_processor_config()
         # ensure summarizer object exists for the default
         self._ensure_summarizer()
 
@@ -442,6 +453,7 @@ class MainWindow(QMainWindow):
         heavy objects that depend on the values (currently just the
         summarizer model)."""
         self.settings.update(new_settings)
+        self._sync_audio_processor_config()
         # if summarizer model path changed we need a new instance
         self._ensure_summarizer(force_reload=True)
 
@@ -460,11 +472,18 @@ class MainWindow(QMainWindow):
                 # if path is somehow empty, let Summary figure out default
                 self.summarizer = Summary(path=model_path if model_path else None)
                 self.summarizer_init_error = None
+                self.audio_processor.set_summarizer(self.summarizer)
             except Exception as exc:
                 self.summarizer = None
                 self.summarizer_init_error = str(exc)
+                self.audio_processor.set_summarizer(None)
                 return
 
     def get_summarizer(self):
         """Return the current summarizer instance (may be ``None``)."""
         return self.summarizer
+
+    def _sync_audio_processor_config(self) -> None:
+        """Keep the upload processor aligned with current summarizer settings."""
+        model_path = self.settings.get('model_path') if isinstance(self.settings, dict) else None
+        self.audio_processor.set_model_path(model_path)
