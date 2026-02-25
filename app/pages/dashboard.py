@@ -5,10 +5,12 @@ Dashboard Page for TranscribeNotes Application
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QFrame, QGridLayout, QScrollArea,
-    QSizePolicy
+    QSizePolicy, QMainWindow
 )
 from PySide6.QtCore import Qt, Signal
 
+
+DEBUG = True # global (file level) debug flag
 
 class StatsCard(QFrame):
     """Statistics display card."""
@@ -168,10 +170,12 @@ class DashboardPage(QWidget):
         upload_btn = QPushButton("Upload New Audio")
         upload_btn.setObjectName("primaryButton")
         upload_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        upload_btn.clicked.connect(self._upload_audio_handle_click)
         
         new_patient_btn = QPushButton("Create Patient Profile")
         new_patient_btn.setObjectName("secondaryButton")
         new_patient_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        new_patient_btn.clicked.connect(self._new_patient_handle_click)
         
         search_btn = QPushButton("Search Records")
         search_btn.setObjectName("secondaryButton")
@@ -280,3 +284,29 @@ class DashboardPage(QWidget):
             self.pending_review.update_value(str(stats['pending_review']))
         if 'processing' in stats:
             self.processing.update_value(str(stats['processing']))
+            
+            
+    def _upload_audio_handle_click(self):
+        """" Handles a click on the upload audio button """
+        # TODO: redirect to pages/upload, figure out how to redirect in PySide6!
+        main_win = self.window()
+        
+        if isinstance(main_win, "QMainWindow"): # if we have the main window, do things
+            print(f"Accessing the main window from dashboard page. Main Window Title: {main_win.windowTitle()}") if DEBUG else None
+            
+            # main_win.sidebar.setVisible(True) # if it isn't already visible, show it
+            # main_win.pages.setCurrentIndex(2) # ID 2 should be upload page # TODO better way to set active page? by route name? by label/name? by key/index?
+            # main_win.set_active_page(2) # ID 2 should be upload page # TODO better way to set active page? by route name? by label/name? by key/index?
+
+
+    def _new_patient_handle_click(self):
+        
+        main_winself.window()
+        
+        # TODO: redirect to pages/patients/new, figure out how to redirect to a dialog of a page... Hmmmm
+        print(f"Accessing the main window from dashboard page. Title: {main_win.windowTitle()}") if DEBUG else None
+        print(f"Setting active page to new patient page with dialog open") if DEBUG else None
+        
+        # main_win = self.window()
+        # main_win.set_active_page(3) # ID 3 should be patients page
+        pass

@@ -139,17 +139,23 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("TranscribeNotes - Clinical Documentation System")
         self.setMinimumSize(1200, 800)
-
+        
+        
+        self.settings = {} # default to blank settings, load defaults if settings can't be pulled from .env or whatever
+        
         # application-wide settings and helper objects
-        self.settings = {}
         self.summarizer = None
         self.summarizer_init_error = None
+        self._patient_dataset = {} # blank dict TODO make me a model! oooh la la
+
+        # load defaults so that there is always at least sane defaults to work off
+        if not self.settings:
+            self._load_default_settings()
+
+        # TODO add global config for transcription and translation, etc
 
         self._setup_ui()
-        self._connect_signals()
-
-        # load defaults so that there is always at least a summarizer path
-        self._load_default_settings()
+        self._connect_signals() # setup event handlers
 
         # Start with login page
         self._show_login()
@@ -204,6 +210,7 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(self.settings_page)   # 6
         self.pages.addWidget(self.patient_detail_page) # 7
     
+    # event handlers
     def _connect_signals(self):
         # Sidebar navigation
         self.sidebar.navigation_changed.connect(self._on_navigation_changed)
@@ -215,15 +222,19 @@ class MainWindow(QMainWindow):
         # Patients page - view patient detail
         self.patients_page.view_patient_requested.connect(self._on_view_patient)
         
+        # Patients page - edit patient details
+        self.patients_page.edit_patient_requested.connect(self._on_edit_patient)
+        
         # Patient detail - back to list
         self.patient_detail_page.back_requested.connect(self._on_back_to_patients)
         
         # Upload page - link to patients
         self.upload_page.patient_selection_requested.connect(
             # TODO handle event here, when user selects "new patient" from the upload page
+            # TODO need to redirect to patients page with new patient dialog open, figure out how to make happen
             # do stuff
             
-            lambda: self._on_navigation_changed(2)  # Go to patients page
+            lambda: self._on_navigation_changed(2)  # emit the nav change event, should update things as needed
         )
 
         # Settings page - when the user saves settings, update our state
@@ -254,6 +265,11 @@ class MainWindow(QMainWindow):
         self.patient_detail_page.load_patient(patient_id)
         self.pages.setCurrentIndex(7)  # Patient detail page
     
+    def _on_edit_patient(self, patient_id: int):
+        """Handle request to edit patient details. Will automatically show the edit patient dialog."""
+        self.patient_detail_page.load_patient(patient_id)
+        self.pages.setCurrentIndex(7)  # Patient detail page
+        
     def _on_back_to_patients(self):
         """Return to patients list."""
         self.pages.setCurrentIndex(3)  # Patients page
@@ -273,12 +289,12 @@ class MainWindow(QMainWindow):
             'output_language': 'en',
             'word_timestamps': True,
             'speaker_diarization': False,
-            'model_path': 'models/Qwen3-4B-Q5_0.gguf',
+            'model_path': 'llm_models/Qwen3-4B-Q5_0.gguf',
             'summary_length': 'standard',
             'include_quotes': True,
             'behavioral_themes': True,
             'treatment_suggestions': False,
-            'storage_path': '/var/lib/transcribenotes/data',
+            'storage_path': 'storage', # should be project root relative path
             'auto_backup': True,
             'backup_retention': 30,
             'processing_device': 'auto',
@@ -325,3 +341,15 @@ class MainWindow(QMainWindow):
     def get_summarizer(self):
         """Return the current summarizer instance (may be ``None``)."""
         return self.summarizer
+
+    def _ensure_patient_dataset(self):
+        """Ensure patient dataset is available."""
+        
+        if not self._patient_dataset:
+            print(f"Main Window: No patient dataset found! Can't init!") if DEBUG else None
+            raise ValueError("Main Window: No patient dataset found! Can't init! ABORT!")
+            
+            
+            
+            
+            

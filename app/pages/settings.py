@@ -60,6 +60,9 @@ class SettingsSection(QFrame):
 class SettingsPage(QWidget):
     """Application settings and configuration page."""
     
+    # private const for available languages and ISO language/locale codes
+    _available_languages = [{"name": "English", "ISO_code": "en_US  "}, {"name": "Spanish", "ISO_code": "es_ES"}]
+    
     settings_changed = Signal(dict)
     
     def __init__(self, parent=None):
@@ -109,14 +112,17 @@ class SettingsPage(QWidget):
         trans_form.setSpacing(12)
         trans_form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         
+        
         self.default_language = NoScrollComboBox()
         self.default_language.addItem("Auto-detect", "auto")
-        self.default_language.addItem("English", "en")
-        self.default_language.addItem("Spanish", "es")
-        trans_form.addRow("Default Language:", self.default_language)
+        for language in self._available_languages:
+            self.default_language.addItem(language["name"], language["ISO_code"])
+        trans_form.addRow("Input Language:", self.default_language)
         
         self.output_language = NoScrollComboBox()
         self.output_language.addItem("English", "en")
+        for language in self._available_languages:
+            self.output_language.addItem(language["name"], language["ISO_code"])
         trans_form.addRow("Output Language:", self.output_language)
         
         self.word_timestamps = QCheckBox("Include word-level timestamps")
@@ -377,6 +383,9 @@ class SettingsPage(QWidget):
             'show_notifications': self.show_notifications.isChecked(),
         }
         
+        # TODO sync settings dict somewhere, .env? local json? db store?
+        
+        
         # TODO: Hook up to backend/config file
         self.settings_changed.emit(settings)
     
@@ -416,7 +425,7 @@ class SettingsPage(QWidget):
         Args:
             settings: Dictionary of setting key-value pairs
         """
-        # TODO: Hook up to backend/config file
+        # TODO: Hook up to backend/config file, pull from .env? json?
         # Apply settings to UI widgets
         if 'model_path' in settings:
             self.model_path.setText(settings.get('model_path', self.model_path.text()))

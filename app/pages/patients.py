@@ -14,11 +14,14 @@ from PySide6.QtCore import Qt, Signal
 from app.components.no_scroll_combo import NoScrollComboBox
 from datetime import datetime
 
+# from app.src.models.Patient import Patient # TODO make me!
 
-class CreatePatientDialog(QDialog):
+
+class CreateNewPatientDialog(QDialog):
     """Dialog for creating a new patient profile."""
     
     patient_created = Signal(dict)  # Patient data
+    _patient_data = dict() # patient data dict to create and store in db
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -77,13 +80,15 @@ class CreatePatientDialog(QDialog):
         create_btn = QPushButton("Create Patient")
         create_btn.setObjectName("primaryButton")
         create_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        create_btn.clicked.connect(self._create_patient)
+        create_btn.clicked.connect(self._handle_create_patient)
         buttons_layout.addWidget(create_btn)
         
         layout.addLayout(buttons_layout)
     
-    def _create_patient(self):
+    def _handle_create_patient(self):
         """Validate and emit patient creation."""
+        
+        # TODO move validation and all sanitization etc to model, make it PHat with a capital PH
         data = {
             'mrn': self.mrn_input.text().strip(),
             'first_name': self.first_name_input.text().strip(),
@@ -97,18 +102,164 @@ class CreatePatientDialog(QDialog):
             # TODO: Show error
             return
         
-        self.patient_created.emit(data)
+        # TODO rest of validation, sanity checks, xss prevention, etc
+        
+        self.patient_created.emit(data) # emit event
+        
+        # TODO insert record into database
+        # new_patient = Patient(self._patient_data)
+        # new_patient.save_to_db() or what not
+        
+        # pass confirmation or error to dialog
         self.accept()
+
+
+class CreateEditPatientDialog(QDialog):
+    """Dialog for editing an existing patient profile."""
+    
+    patient_edited = Signal(dict)  # Patient edited event
+    
+    _patient_data = dict() # patient data dict to edit
+    
+    def __init__(self, patient_data: dict, parent=None):
+        super().__init__(parent)
+        
+        self._ensure_local_patient_data()
+        
+        # ui setup
+        self.setMinimumWidth(500)
+        self._setup_ui()
+        
+        # now that the ui is setup, populate the form fields with the current patient data
+        self._load_patient_data_into_edit_dialog()
+        
+        self.setWindowTitle(f"Edit Patient Profile: {self._patient_data["first_name"]} {self._patient_data['last_name']}") # TODO make a class model for patients, do validation and all that in fat models, leave our controllers skinny and just doing the handoffs and referrals and whatnot
+        
+        
+    def _load_patient_data_into_edit_dialog(self):
+        """Load patient data from dict and populate the inputs' text/plaintext as needed."""
+        self._ensure_local_patient_data()
+        
+        # set the text/plaintext fields of all the related form inputs
+        self.mrn_input.setText(self._patient_data['mrn'])
+        self.first_name_input.setText(self._patient_data['first_name'])
+        self.last_name_input.setText(self._patient_data['last_name'])
+        self.dob_input.setText(self._patient_data['dob'])
+        self.notes_input.setPlainText(self._patient_data['notes'])
+        
+        # that should populate the existing form inputs with current data for patient
+        # TODO add more fields as needed
+    
+    def _setup_ui(self):
+        
+        self._ensure_local_patient_data()
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(32, 32, 32, 32)
+        layout.setSpacing(24)
+        
+        # Title
+        title = QLabel(f"Edit Patient Profile: {self._patient_data["first_name"]} {self._patient_data['last_name']}")
+        title.setObjectName("dialogTitle") # TODO what is this object specifically named for? are we accessing by "dialogTitle" somewhere?
+        layout.addWidget(title)
+        
+        # Form
+        form = QFormLayout()
+        form.setSpacing(16)
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        
+        self.mrn_input = QLineEdit()
+        self.mrn_input.setPlaceholderText("Medical Record Number")
+        form.addRow("MRN:", self.mrn_input)
+        
+        self.first_name_input = QLineEdit()
+        self.first_name_input.setPlaceholderText("First name")
+        form.addRow("First Name:", self.first_name_input)
+        
+        self.last_name_input = QLineEdit()
+        self.last_name_input.setPlaceholderText("Last name")
+        form.addRow("Last Name:", self.last_name_input)
+        
+        self.dob_input = QLineEdit()
+        self.dob_input.setPlaceholderText("YYYY-MM-DD")
+        form.addRow("Date of Birth:", self.dob_input)
+        
+        self.notes_input = QTextEdit()
+        self.notes_input.setPlaceholderText("Initial notes or identifying information...")
+        self.notes_input.setMaximumHeight(100)
+        form.addRow("Notes:", self.notes_input)
+        
+        layout.addLayout(form)
+        
+        # Buttons
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
+        
+        cancel_btn = QPushButton("✖ Cancel")
+        cancel_btn.setObjectName("secondaryButton")
+        cancel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        cancel_btn.clicked.connect(self.reject) # abort mission
+        buttons_layout.addWidget(cancel_btn)
+        
+        edit_btn = QPushButton("✓ Save Changes")
+        edit_btn.setObjectName("primaryButton")
+        edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        edit_btn.clicked.connect(
+            lambda checked, pid=self._patient_data['id']: self._handle_edit_patient() # view single patient page (passed id)
+        )
+        buttons_layout.addWidget(edit_btn)
+        
+        layout.addLayout(buttons_layout)
+    
+    def _handle_edit_patient(self):
+        """Validate, create and emit patient."""
+        data = {
+            'mrn': self.mrn_input.text().strip(),
+            'first_name': self.first_name_input.text().strip(),
+            'last_name': self.last_name_input.text().strip(),
+            'dob': self.dob_input.text().strip(),
+            'notes': self.notes_input.toPlainText().strip(),
+        }
+        
+        # Basic validation
+        if not data['mrn'] or not data['first_name'] or not data['last_name']:
+            # TODO: Show error
+            return
+        
+        # TODO rest of validation, sanity checks, xss prevention, etc
+        
+        # self.patient_update(idx, patient_data) # update patient in db something like this
+        self.patient_edited.emit(data) # emit event
+        self.accept()
+        
+    def _ensure_local_patient_data(self):
+        """Ensure local patient data is available."""
+        
+        if not self._patient_data:
+            print(f"Edit Patient Dialog Class: No local patient data found to edit!") if DEBUG else None
+            raise ValueError("Edit Patient Dialog Class: No local patient data found to edit!")
 
 
 class PatientsPage(QWidget):
     """Patient management page with list and search."""
     
     view_patient_requested = Signal(int)  # patient_id
+    edit_patient_requested = Signal(int)  # patient_id
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self._setup_ui()
+        
+        # self.window()._ensure_patient_dataset() # TODO FIX ME
+            
+        # patient_dataset = getattr(self.window(), "_patient_dataset")
+        # if not patient_dataset:
+        #     print(f"Patients Page: No patient dataset found to load! Can't init patients page! Loading sample dataset for now!") if DEBUG else None
+            
+        #     # Load sample data for now # TODO swap to /real/ data from db query
+        #     self._load_sample_dataset()
+            
+        #     # self._load_patient_dataset_from_db()
     
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -196,9 +347,6 @@ class PatientsPage(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
         
-        # Load sample data
-        self._load_sample_data()
-        
         content_layout.addWidget(self.table)
         
         # Pagination
@@ -225,8 +373,10 @@ class PatientsPage(QWidget):
         
         layout.addWidget(content)
     
-    def _load_sample_data(self):
+    def _load_sample_dataset(self):
         """Load sample patient data for skeleton."""
+        
+        # TODO implement me, connect to db for retrieval!
         sample_patients = [
             {"id": 1, "mrn": "12345", "name": "John Doe", "sessions": 12, "last_session": "Jan 28, 2026"},
             {"id": 2, "mrn": "12346", "name": "Maria Santos", "sessions": 8, "last_session": "Jan 27, 2026"},
@@ -238,13 +388,19 @@ class PatientsPage(QWidget):
             {"id": 8, "mrn": "12352", "name": "Emily Davis", "sessions": 11, "last_session": "Jan 21, 2026"},
         ]
         
-        self._populate_table(sample_patients)
-    
-    def _populate_table(self, patients: list):
-        """Populate table with patient data."""
-        self.table.setRowCount(len(patients))
+        main_win = self.window()
+        patient_dataset = sample_patients if DEBUG else getattr(self.window(), "_patient_dataset") # get real data if not in DEBUG mode
         
-        for row, patient in enumerate(patients):
+        setattr(main_win, "_patient_dataset", patient_dataset)
+        
+        # populate dat table
+        self._populate_table(getattr(main_win, "_patient_data")) # populate table with patient data
+    
+    def _populate_table(self, patients: dict):
+        """Populate table with patient data."""
+        self.table.setRowCount(len(patients)) # preallocate rows
+        
+        for row, patient in enumerate(patients): # enumerate => 0-based index remember to add 1 as needed!
             # MRN
             mrn_item = QTableWidgetItem(patient['mrn'])
             mrn_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -273,13 +429,16 @@ class PatientsPage(QWidget):
             view_btn.setObjectName("tableButton")
             view_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             view_btn.clicked.connect(
-                lambda checked, pid=patient['id']: self.view_patient_requested.emit(pid)
+                lambda checked, pid=patient['id']: self.view_patient_requested.emit(pid) # view single patient page (passed id)
             )
             actions_layout.addWidget(view_btn)
 
             edit_btn = QPushButton("Edit")
             edit_btn.setObjectName("tableButton")
             edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            edit_btn.clicked.connect(
+                lambda checked, pid=patient['id']: self.edit_patient_requested.emit(pid) # edit single patient page (passed id)
+            )
             actions_layout.addWidget(edit_btn)
             
             self.table.setCellWidget(row, 4, actions_widget)
@@ -287,20 +446,33 @@ class PatientsPage(QWidget):
     
     def _show_create_dialog(self):
         """Show create patient dialog."""
-        dialog = CreatePatientDialog(self)
+        dialog = CreateNewPatientDialog(self)
         dialog.patient_created.connect(self._on_patient_created)
         dialog.exec()
+        
+    def _show_edit_dialog(self):
+        """Show edit patient dialog on patients page."""
+
+        patient_data = getattr(self.window(), "_patient_data")
+        if not patient_data:
+            print(f"Show Edit Dialog: No patient data found in `window._patient_data` var to edit.") if DEBUG else None
+            raise ValueError("No patient data found in `window._patient_data` var to edit.")
+        
+        dialog = CreatePatientEditDialog(self, patient_data)
+        dialog.patient_edited.connect(self._on_patient_edited)
+        dialog.exec()
     
-    def _on_patient_created(self, data: dict):
+    def _on_patient_created(self, patient: dict):
         """Handle new patient creation."""
         # TODO: Hook up to backend endpoint
         # For now, just add to table
-        row = self.table.rowCount()
-        self.table.insertRow(row)
+        row = self.table.rowCount() # current, pre-adding of new patient, row count of table
+        self.table.insertRow(row) # insert at last index to append to list
+        # TODO should probably recall whatever search param or sorts/filters/etc are active and return to that state, pyside should handle this automatically I think, as this is just a dialog/modal
         
-        name = f"{data['first_name']} {data['last_name']}"
+        name = f"{patient['first_name']} {patient['last_name']}" # TODO may need to adjust this for non-US/English cultural name conventions, depending on how far we go for internationalization support ...
         
-        mrn_item = QTableWidgetItem(data['mrn'])
+        mrn_item = QTableWidgetItem(patient['mrn'])
         mrn_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         self.table.setItem(row, 0, mrn_item)
         
@@ -324,6 +496,56 @@ class PatientsPage(QWidget):
         view_btn = QPushButton("View")
         view_btn.setObjectName("tableButton")
         view_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        view_btn.clicked.connect(
+            lambda checked, pid=patient['id']: self.view_patient_requested.emit(pid) # view single patient page (passed id)
+        )
+        actions_layout.addWidget(view_btn)
+
+        edit_btn = QPushButton("Edit")
+        edit_btn.setObjectName("tableButton")
+        edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        edit_btn.clicked.connect(
+            lambda checked, pid=patient['id']: self.edit_patient_requested.emit(pid) # view single patient page (passed id)
+        )
+        actions_layout.addWidget(edit_btn)
+        
+        self.table.setCellWidget(row, 4, actions_widget)
+        self.table.setRowHeight(row, 56)
+        
+    def _on_patient_edited(self, data: dict):
+        """Handle edit patient."""
+        # TODO: Hook up to backend endpoint
+        # For now, just update table
+        row_idx_to_update = 0 # self.table.get_the_damn_index_from_the_widget(widget) # TODO figure this out
+
+        # this chunk converts the data dict passed in to a QTableWidgetItem, then should /replace/ the existing row for this record. TODO need to find index of said record.
+        # TODO some DRY issues here, duplicating the dialog code, need to combine and then depending on new/edit, populate existing values, or default to blanks for new
+        name = f"{data['first_name']} {data['last_name']}"
+        
+        mrn_item = QTableWidgetItem(data['mrn'])
+        mrn_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.table.setItem(row_idx_to_update, 0, mrn_item)
+        
+        name_item = QTableWidgetItem(name)
+        self.table.setItem(row_idx_to_update, 1, name_item)
+        
+        sessions_item = QTableWidgetItem("0")
+        sessions_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.table.setItem(row_idx_to_update, 2, sessions_item)
+        
+        today = datetime.now().strftime("%b %d, %Y")
+        last_item = QTableWidgetItem(today)
+        self.table.setItem(row_idx_to_update, 3, last_item)
+        
+        # Add action buttons
+        actions_widget = QWidget()
+        actions_layout = QHBoxLayout(actions_widget)
+        actions_layout.setContentsMargins(4, 4, 4, 4)
+        actions_layout.setSpacing(4)
+        
+        view_btn = QPushButton("View")
+        view_btn.setObjectName("tableButton")
+        view_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         actions_layout.addWidget(view_btn)
 
         edit_btn = QPushButton("Edit")
@@ -331,8 +553,14 @@ class PatientsPage(QWidget):
         edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         actions_layout.addWidget(edit_btn)
         
-        self.table.setCellWidget(row, 4, actions_widget)
-        self.table.setRowHeight(row, 56)
+        # TODO update cell widget with appropriate widget above and proper index of existing row
+        self.table.setCellWidget(row_idx_to_update, 0, actions_widget)
+        self.table.setCellWidget(row_idx_to_update, 1, actions_widget)
+        self.table.setCellWidget(row_idx_to_update, 2, actions_widget)
+        self.table.setCellWidget(row_idx_to_update, 3, actions_widget)
+        self.table.setCellWidget(row_idx_to_update, 4, actions_widget)
+        self.table.setRowHeight(row_idx_to_update, 56) # TODO why are we setting rowheight here?
+
     
     def _filter_patients(self, text: str):
         """Filter table by search text."""
@@ -343,11 +571,12 @@ class PatientsPage(QWidget):
             match = text.lower() in mrn or text.lower() in name
             self.table.setRowHidden(row, not match)
     
-    def load_patients(self, patients: list):
-        """Load patients from backend.
+    def _load_patient_data_into_table(self):
+        """Load patients from backend."""
         
-        Args:
-            patients: List of patient dicts from API
-        """
-        # TODO: Hook up to backend endpoint
-        self._populate_table(patients)
+        patient_dataset = getattr(self.window(), "_patient_dataset")
+        if not patient_dataset:
+            print(f"Patients Load Patient Data Into Table: No patient dataset found to load! Can't init load patient dataset into table!!") if DEBUG else None
+            raise ValueError("Patients Load Patient Data Into Table: No patient dataset found to load! Can't init load patient dataset into table!!")
+        # TODO: Hook up to backend endpoint, basically a SELECT * FROM patients WHERE owner_id = current_user_id ORDER BY date DESC kinda query
+        self._populate_table(getattr(self.window(), "_patient_data")) # populate table with patient data
