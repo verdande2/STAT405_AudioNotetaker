@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QPushButton, QFrame, QScrollArea, QComboBox,
     QProgressBar, QFileDialog, QListWidget, QListWidgetItem,
     QTextEdit, QSizePolicy, QMessageBox
+    QTextEdit, QSizePolicy, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, QMimeData
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
@@ -21,6 +22,14 @@ from app.db import (
     list_client_profiles,
 )
 
+import json, random
+from datetime import datetime
+
+# importing transcriber and translator classes
+from app.src.AudioTranscriber.AudioTranscriber import AudioTranscriber
+from app.src.TranscriptTranslator.TranscriptTranslator import TranscriptTranslator
+
+DEBUG = True # global debug flag, naughty naughty
 
 class DropZone(QFrame):
     """Drag and drop zone for audio files."""
@@ -241,6 +250,28 @@ class UploadPage(QWidget):
         self.patient_combo.addItem("+ Create New Patient", "new")
         self.patient_combo.setEnabled(False)
         self.patient_combo.currentIndexChanged.connect(self._update_queue_ui)
+        
+        # for now, let's generate some dummy data!
+        first_names = [
+            "Alice", "Brian", "Catherine", "David", "Emily",
+            "Frank", "Grace", "Henry", "Isabella", "Jack"
+        ]
+
+        last_names = [
+            "Smith", "Johnson", "Williams", "Brown", "Jones",
+            "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"
+        ]
+
+        patients = [
+            f"{first} {last} (MRN: {random.randint(10000, 99999)})"
+            for first, last in zip(first_names, last_names)
+        ] # TODO retrieve from db!
+        
+        idx = 1
+        for patient in patients:
+            self.patient_combo.addItem(patient, idx)
+            idx += 1 # old school
+            
         patient_layout.addWidget(self.patient_combo)
         
         patient_layout.addStretch()
@@ -308,7 +339,7 @@ class UploadPage(QWidget):
         """Handle dropped files."""
         for file_path in files:
             if file_path not in self.queued_files:
-                self.queued_files.append(file_path)
+                self.queued_files.append(file_path) # synchronous indices, excellent...
                 self._add_file_widget(file_path)
         
         self._update_queue_ui()
@@ -348,12 +379,191 @@ class UploadPage(QWidget):
         patient_selected = self.patient_combo.currentData() not in (None, "new")
         self.process_btn.setEnabled((count > 0) and patient_selected and not self._is_processing)
     
+    def _process_file(self, file_path: str):
+
+        self.set_file_progress(file_path, progress = 0) # we have four main phases, and can't really estimate progress on the fly easily, so we'll treat it as progress on task list, and divide the processing into transcription, translation, summarization and output sections, and update the progress bar 25% at a time (for now)
+        
+        # transcribe the things!
+        transcriber = AudioTranscriber(file_path)
+        transcriber.transcribe()
+        transcription = {}
+        transcription = transcriber.to_json()
+        
+        print(f"Transcribed file: {file_path} successfully!") if DEBUG else None
+        print(f"Transcription JSON: {transcription}") if DEBUG else None
+
+        self.set_file_progress(file_path, progress=25)
+        
+        # have I written the metadata part yet? try, and catch for now
+        try:
+            lang = transcription["lang"]
+        except:
+            lang = "en_US"
+
+        print(f"Language detected: {lang}") if DEBUG else None
+
+        # translate the things! (if needed) 
+        if transcription is not None and lang != "en_US":
+            print(f"Translating file: {file_path}") if DEBUG else None
+            
+            translator = TranscriptTranslator(transcription) # hand off the JSON to the translator
+
+            # TODO language detection
+            translator.set_languages(lang, "en_US") # sets input and output languages
+
+            translator.translate()
+
+            # we passed in the full JSON transcript with metadata structure, we're getting back the same (with translated text) and reassigning back
+            transcription = translator.to_json()
+            
+            print(f"Translated file: {file_path} successfully!") if DEBUG else None
+            print(f"Translated transcription JSON: {transcription}") if DEBUG else None
+        
+        self.set_file_progress(file_path, progress=50)
+        # if we need to output to .json file, do it here
+        # transcription.to_file(output_file)
+
+        # print(transcription) # for debugging as needed
+        
+        # summarize the things!
+        print(f"Summarizing file: {file_path}") if DEBUG else None
+        
+        main_win = main_win = self.window()
+        summarizer = getattr(main_win, 'summarizer', None)
+        summary_text_clean = None # so we can detect if the summary was assigned or not, at end of method
+        
+        if summarizer is None:
+            reason = getattr(main_win, 'summarizer_init_error', None)
+            message = "No summarizer model is available."
+            if reason:
+                message += f"\n\nReason:\n{reason}"
+            QMessageBox.warning(
+                self,
+                "Missing Model",
+                message
+            )
+            print(f"No summarizer model is available. Returning!") if DEBUG else None
+            
+            # TODO display an error and throw an exception here
+            # TODO steal this reason/message/exception dialog box display template for _process_file method above
+            return # kick back after warning dialog # TODO why do you continue to execute after this return?!?!?! what is wrong with you??!
+        
+        else:
+            if not transcription: # generated above, in the transcribe/translate section
+                print(f"No transcription data found for file: {file_path}, defaulting to dummy JSON") if DEBUG else None
+                
+                # fallback to a minimal dummy transcript # TODO replace with proper metadata structure and sample transcript/summary, it will roughly be this structure
+                transcription = {
+                    "lang": "en_US",
+                    "model": "whisper-small-v2",
+                    "date_created": "2026-01-01 00:00:00",
+                    "total_duration": 12345,
+                    "segments": [
+                            {"speaker": "PATIENT", "timestamp": [0, 3], "text": "I've been having trouble focusing after lunch and often drift to other thoughts."},
+                            {"speaker": "THERAPIST", "timestamp": [3, 6], "text": "Have you tried short breaks or a timed work pattern like Pomodoro?"}
+                        ]
+                    }
+
+            try:
+                result = summarizer.SummarizeSingle(transcript=transcription)
+                # ensure we have plain text
+                if isinstance(result, dict):
+                    summary_text = result.get('choices', [{}])[0].get('text', '')
+                else:
+                    summary_text = str(result)
+
+                # sanitize: remove obvious meta-commentary and truncate to 2-3 sentences
+                import re
+                # remove lines that look like model self-talk
+                summary_text = re.sub(r"(?i)\b(wait|okay|let me|that's)\b[\s\S]*", "", summary_text)
+                # split into sentences
+                sentences = re.split(r'(?<=[.!?])\s+', summary_text.strip())
+                # pick up to first 3 non-empty sentences
+                clean_sentences = [s.strip() for s in sentences if s.strip()][:3]
+                summary_text_clean = ' '.join(clean_sentences).strip()
+                if not summary_text_clean:
+                    summary_text_clean = summary_text.strip()
+
+                # append to a rolling logfile at repo-root/logs/summaries.txt
+                from datetime import datetime
+                logs_dir = Path(__file__).parents[2] / 'logs'
+                logs_dir.mkdir(parents=True, exist_ok=True)
+                log_path = logs_dir / 'summaries.txt'
+                with open(log_path, 'a', encoding='utf-8') as lf:
+                    lf.write('---\n')
+                    lf.write(f"Timestamp: {datetime.utcnow().isoformat()}Z\n")
+                    lf.write(f"Files: {', '.join(self.queued_files) if self.queued_files else 'none'}\n")
+                    lf.write('Summary:\n')
+                    lf.write(summary_text_clean + '\n\n')
+
+                # also print a short confirmation to console for developers
+                print(f"Summary appended to {log_path}") # TODO will probably want to update from a CLI print() to a dialog box?
+                
+                print(f"Summarized file: {file_path} successfully!") if DEBUG else None
+                print(f"Summarized transcription (cleaned): {summary_text_clean}") if DEBUG else None
+                
+            except Exception as e:
+                # write the error to the same logfile so failures are visible
+                logs_dir = Path(__file__).parents[2] / 'logs'
+                logs_dir.mkdir(parents=True, exist_ok=True)
+                log_path = logs_dir / 'summaries.txt'
+                with open(log_path, 'a', encoding='utf-8') as lf:
+                    lf.write('---\n')
+                    lf.write(f"Timestamp: {datetime.utcnow().isoformat()}Z\n")
+                    lf.write('Summarization Error:\n')
+                    lf.write(str(e) + '\n\n')
+                print(f"Summarization error: {e}")
+                
+                print(f"Summarization choked on file: {file_path} with error: {e}") if DEBUG else None
+                # TODO dialog warning?
+                return # kick back after warning dialog
+                
+        self.set_file_progress(file_path, progress=75)
+        
+        # once we've made it this far, we should have a JSON object in `transcription`, and we have the summary in `summary_text_clean`, just need to merge them together (maintaining the JSON metadata structure) and dump it where we need to put it
+        if summary_text_clean is not None:
+            transcription["summary"] = summary_text_clean
+            transcription["summary_wordcount"] = len(summary_text_clean.split(" "))
+            transcription["summary_accuracy_score"] = 0.0 # TODO implement me somewhere!
+        else:
+            transcription["summary"] = "No summary available"
+            print(f"No clean summary available for file: {file_path}") if DEBUG else None
+        
+        # TODO store transcription JSON obj somewhere!
+        # to get the JSON string:
+        # string_version = json.dumps(transcription, ensure_ascii=False, indent=4)
+        
+        # to write JSON to file:
+        # json.dump(transcription, open("output/transcription.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        
+        # finish the progress bar
+        self.set_file_progress(file_path, progress=100)
+        
+        print(f"Finished processing file: {file_path} successfully!") if DEBUG else None
+        print(f"Final transcription JSON with added summary and metadata: {transcription}") if DEBUG else None
+        
+    
     def _start_processing(self):
         """Start processing queued files."""
+        
+        print(f"BUTTON PRESS! Processing files now!") if DEBUG else None
+        
         patient_id = self.patient_combo.currentData()
+        print(f"Patient ID: {patient_id}") if DEBUG else None
+        
+        # validation, sanity checking, etc
+        print(f"Checking for files in queue...") if DEBUG else None
+        print(f"{len(self.queued_files)} queued files found: {self.queued_files}") if DEBUG else None
+        
+        if len(self.queued_files) == 0:
+            print(f"No files in queue! Returning!") if DEBUG else None
+            QMessageBox.warning(self, "Warning: No files added to upload queue!", "Nothing to process! Please add files to the upload queue before starting processing.")
+            return # kick back from dialog box
         
         if patient_id == "new":
-            self.patient_selection_requested.emit()
+            self.patient_selection_requested.emit() # assuming someone will handle this event somewhere? I only see 2 occurrences in project, unsure where we want to go with event handler, dialog box popup with new patient short form? 
+            print(f"User selected new patient in the select! Emitting selection request! Returning!") if DEBUG else None
+            
             return
         
         if patient_id is None:
@@ -362,6 +572,9 @@ class UploadPage(QWidget):
                 "Upload Audio",
                 "Select a patient before starting processing.",
             )
+            # TODO: Show error - no patient selected
+            print(f"No patient selected! Returning!") if DEBUG else None
+            
             return
         
         self._is_processing = True
@@ -370,9 +583,37 @@ class UploadPage(QWidget):
 
         # Mark all files as processing
         for widget in self.file_widgets.values():
+        
+        # process the file queue, one at a time, updating corresponding ui widget as we go
+        for file_path, widget in zip(self.queued_files, self.file_widgets.values()): # ASSUMING the order of queued files matches the order of widgets, TODO VERIFY THIS
+            print(f"Processing file: {file_path}") if DEBUG else None
+            
             widget.set_processing()
         
         self.upload_started.emit(list(self.queued_files), int(patient_id))
+            
+            self.upload_started.emit(self.queued_files, patient_id) # not sure if this is an emitted event for ALL of the queued files, or just singles and too tired to determine this at 3:52 am 
+            
+            try:
+                self._process_file(file_path)
+                
+                widget.set_complete()  # mark files complete so the user sees something happen
+                print(f"Finished processing file: {file_path} successfully!") if DEBUG else None
+                
+            except Exception as e:
+                # TODO handle errors in a better way
+                self.set_file_progress(file_path, progress=0)  # epic fail
+                self.set_file_error(
+                    file_path, "Unknown error processing file: ERROR CODE 0xDEADBEEF"
+                )
+                print(f"Processing file: {file_path} failed with error: {e}") if DEBUG else None
+                raise e # pass one down, pass it around, 99 exceptions of beer on the ... wall?
+            
+        # TODO: Hook up to backend endpoint
+        
+        # For skeleton demo, simulate progress
+        # In production, this would be replaced with actual backend calls
+        # note: moved calls to update file progress and error and progress bars to the _process_file method above
     
     def set_file_progress(self, file_path: str, progress: int):
         """Update progress for a specific file."""

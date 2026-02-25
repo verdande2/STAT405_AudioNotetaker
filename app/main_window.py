@@ -144,8 +144,16 @@ class MainWindow(QMainWindow):
         self.current_account = None
         self.audio_processor = AudioSessionProcessor()
 
+        # application-wide settings and helper objects
+        self.settings = {}
+        self.summarizer = None
+        self.summarizer_init_error = None
+
         self._setup_ui()
         self._connect_signals()
+
+        # load defaults so that there is always at least a summarizer path
+        self._load_default_settings()
 
         # Start with login page
         self._show_login()
@@ -224,9 +232,15 @@ class MainWindow(QMainWindow):
         
         # Upload page - link to patients
         self.upload_page.patient_selection_requested.connect(
+            # TODO handle event here, when user selects "new patient" from the upload page
+            # do stuff
+            
             lambda: self._on_navigation_changed(2)  # Go to patients page
         )
         self.upload_page.upload_started.connect(self._on_upload_started)
+
+        # Settings page - when the user saves settings, update our state
+        self.settings_page.settings_changed.connect(self._on_settings_changed)
     
     def _on_navigation_changed(self, index: int):
         """Handle sidebar navigation changes."""
@@ -387,3 +401,70 @@ class MainWindow(QMainWindow):
         self.patients_page.refresh_patients()
         self.transcripts_page.refresh_transcripts()
         self.upload_page.refresh_patients()
+
+    def _load_default_settings(self):
+        """Populate ``self.settings`` with every key the settings page uses.
+
+        This is called during initialization so that other parts of the
+        application can safely read ``self.settings['model_path']`` etc without
+        having to check for missing keys.  In a real app these values would come
+        from a file or database.
+        """
+        # copy the defaults from SettingsPage._reset_defaults manually
+        self.settings = {
+            'default_language': 'auto',
+            'output_language': 'en',
+            'word_timestamps': True,
+            'speaker_diarization': False,
+            'model_path': 'models/Qwen3-4B-Q5_0.gguf',
+            'summary_length': 'standard',
+            'include_quotes': True,
+            'behavioral_themes': True,
+            'treatment_suggestions': False,
+            'storage_path': '/var/lib/transcribenotes/data',
+            'auto_backup': True,
+            'backup_retention': 30,
+            'processing_device': 'auto',
+            'max_threads': 4,
+            'batch_processing': True,
+            'theme': 'dark',
+            'session_timeout': 30,
+            'confirm_delete': True,
+            'show_notifications': True,
+        }
+        # ensure summarizer object exists for the default
+        self._ensure_summarizer()
+
+    def _on_settings_changed(self, new_settings: dict):
+        """Callback from settings page when the user presses "Save".
+
+        We merge the dictionary, persist it if necessary, and recreate any
+        heavy objects that depend on the values (currently just the
+        summarizer model)."""
+        self.settings.update(new_settings)
+        # if summarizer model path changed we need a new instance
+        self._ensure_summarizer(force_reload=True)
+
+    def _ensure_summarizer(self, force_reload: bool = False):
+        """Create or reload the :class:`Summary` object if needed.
+
+        The upload page will grab ``self.summarizer`` when it needs to perform
+        a summary.  We lazily create it so that startup doesn't blow up when
+        the model file is missing; it will raise as soon as someone hits the
+        button.
+        """
+        if self.summarizer is None or force_reload:
+            try:
+                from app.lm.Summarizer import Summary
+                model_path = self.settings.get('model_path')
+                # if path is somehow empty, let Summary figure out default
+                self.summarizer = Summary(path=model_path if model_path else None)
+                self.summarizer_init_error = None
+            except Exception as exc:
+                self.summarizer = None
+                self.summarizer_init_error = str(exc)
+                return
+
+    def get_summarizer(self):
+        """Return the current summarizer instance (may be ``None``)."""
+        return self.summarizer
