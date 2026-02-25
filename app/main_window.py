@@ -4,7 +4,7 @@ Main Window for TranscribeNotes Application
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QStackedWidget, QFrame, QSizePolicy
+    QLabel, QPushButton, QStackedWidget, QFrame, QSizePolicy, QMessageBox, QApplication
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
@@ -17,6 +17,8 @@ from app.pages.transcripts import TranscriptsPage
 from app.pages.accounts import AccountsPage
 from app.pages.settings import SettingsPage
 from app.pages.login import LoginPage
+from app.db import AuthorizationError, DatabaseInitializationError, InvalidDatabaseKeyError, MissingDatabaseKeyError
+from app.services import AudioSessionProcessor
 
 
 class NavigationButton(QPushButton):
@@ -140,6 +142,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("TranscribeNotes - Clinical Documentation System")
         self.setMinimumSize(1200, 800)
         self.current_account = None
+        self.audio_processor = AudioSessionProcessor()
 
         self._setup_ui()
         self._connect_signals()
@@ -223,12 +226,15 @@ class MainWindow(QMainWindow):
         self.upload_page.patient_selection_requested.connect(
             lambda: self._on_navigation_changed(2)  # Go to patients page
         )
+        self.upload_page.upload_started.connect(self._on_upload_started)
     
     def _on_navigation_changed(self, index: int):
         """Handle sidebar navigation changes."""
         # Map sidebar index to page index (offset by 1 for login page)
         if index == 0:
             self.dashboard_page.refresh_from_database()
+        if index == 1:
+            self.upload_page.refresh_patients()
         if index == 2:
             self.patients_page.refresh_patients()
         if index == 3:
@@ -242,6 +248,7 @@ class MainWindow(QMainWindow):
         self.current_account = self.login_page.current_account
         self.sidebar.set_user(username, role)
         self.dashboard_page.set_authenticated_account(self.current_account)
+        self.upload_page.set_authenticated_account(self.current_account)
         self.patients_page.set_authenticated_account(self.current_account)
         self.patient_detail_page.set_authenticated_account(self.current_account)
         self.transcripts_page.set_authenticated_account(self.current_account)
@@ -255,6 +262,7 @@ class MainWindow(QMainWindow):
         self.current_account = None
         self.login_page.current_account = None
         self.dashboard_page.set_authenticated_account(None)
+        self.upload_page.set_authenticated_account(None)
         self.patients_page.set_authenticated_account(None)
         self.patient_detail_page.set_authenticated_account(None)
         self.transcripts_page.set_authenticated_account(None)
@@ -284,6 +292,7 @@ class MainWindow(QMainWindow):
         role = "Administrator" if getattr(account, "role", "") == "admin" else "Psychologist"
         self.sidebar.set_user(account.display_name, role)
         self.dashboard_page.set_authenticated_account(account)
+        self.upload_page.set_authenticated_account(account)
         self.patients_page.set_authenticated_account(account)
         self.patient_detail_page.set_authenticated_account(account)
         self.transcripts_page.set_authenticated_account(account)
@@ -292,3 +301,89 @@ class MainWindow(QMainWindow):
     def _on_authenticated_account_deleted(self):
         """Force logout when the signed-in account is deleted."""
         self._on_logout()
+
+    def _on_upload_started(self, files: list[str], patient_id: int):
+        """Process queued uploads and persist sessions.
+
+        Pipeline stages are delegated to `AudioSessionProcessor`, which keeps a
+        placeholder transcription stage until speech-to-text is integrated.
+        """
+        account = self.current_account
+        if account is None or getattr(account, "role", None) != "psychologist":
+            QMessageBox.warning(
+                self,
+                "Upload Audio",
+                "Sign in as a psychologist to process uploads.",
+            )
+            self.upload_page.finish_processing()
+            return
+
+        if not files:
+            self.upload_page.finish_processing()
+            return
+
+        successes = 0
+        failures: list[tuple[str, str]] = []
+
+        for file_path in files:
+            try:
+                self.upload_page.set_file_progress(file_path, 5)
+                QApplication.processEvents()
+
+                self.audio_processor.process_audio_file(
+                    psychologist_account_id=account.id,
+                    client_profile_id=patient_id,
+                    source_audio_path=file_path,
+                    progress_callback=lambda value, fp=file_path: self._update_upload_progress(fp, value),
+                )
+                self.upload_page.set_file_complete(file_path)
+                QApplication.processEvents()
+                successes += 1
+            except (
+                AuthorizationError,
+                MissingDatabaseKeyError,
+                InvalidDatabaseKeyError,
+                DatabaseInitializationError,
+            ) as exc:
+                message = str(exc)
+                self.upload_page.set_file_error(file_path, "DB/Auth Error")
+                failures.append((file_path, message))
+                QApplication.processEvents()
+            except Exception as exc:
+                message = str(exc) or exc.__class__.__name__
+                self.upload_page.set_file_error(file_path, "Processing Error")
+                failures.append((file_path, message))
+                QApplication.processEvents()
+
+        self._refresh_after_upload_processing()
+        self.upload_page.finish_processing(clear_completed=(successes > 0 and not failures))
+
+        if failures:
+            error_lines = "\n".join(
+                f"- {file}: {reason}" for file, reason in failures[:5]
+            )
+            suffix = "\n..." if len(failures) > 5 else ""
+            QMessageBox.warning(
+                self,
+                "Upload Processing Complete",
+                f"Processed {successes} file(s) successfully.\n"
+                f"Failed: {len(failures)}\n\n"
+                f"{error_lines}{suffix}",
+            )
+            return
+
+        QMessageBox.information(
+            self,
+            "Upload Processing Complete",
+            f"Processed and saved {successes} file(s).",
+        )
+
+    def _update_upload_progress(self, file_path: str, value: int):
+        self.upload_page.set_file_progress(file_path, value)
+        QApplication.processEvents()
+
+    def _refresh_after_upload_processing(self):
+        self.dashboard_page.refresh_from_database()
+        self.patients_page.refresh_patients()
+        self.transcripts_page.refresh_transcripts()
+        self.upload_page.refresh_patients()
