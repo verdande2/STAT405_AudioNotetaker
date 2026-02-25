@@ -74,6 +74,8 @@ dependencies = [
     "sqlcipher3>=0.6.2",
     "transcribe-anything>=3.2.4",
     "whisper>=1.1.10",
+    "jupyter>=1.1.1",
+    "ipython>=9.10.0",
 ]
 
 [tool.ruff]
