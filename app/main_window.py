@@ -220,6 +220,9 @@ class MainWindow(QMainWindow):
         
         # Upload page - link to patients
         self.upload_page.patient_selection_requested.connect(
+            # TODO handle event here, when user selects "new patient" from the upload page
+            # do stuff
+            
             lambda: self._on_navigation_changed(2)  # Go to patients page
         )
 
