@@ -1,0 +1,166 @@
+@startuml
+' =========================
+' JSON Type Aliases
+' =========================
+
+class JSONVal <<type>>
+class JSONArray <<type>>
+class JSONObject <<type>>
+
+JSONVal <|-- JSONArray
+JSONVal <|-- JSONObject
+
+
+' =========================
+' Transcript Translator
+' =========================
+
+class TranscriptTranslator {
+  -_transcript_source: Path | None
+  -_transcript_data: Dict[str, Any] | None
+  -_translated_data: Dict[str, Any] | None
+  -_input_language: str
+  -_output_language: str
+  --
+  +__init__(transcript_source: Optional[Union[str, Path, Dict]], input_language: Optional[str], output_language: Optional[str])
+  +set_transcript(transcript_source: Union[str, Path]): None
+  -_load_transcript(source: Union[str, Path]): Dict[str, Any]
+  +set_languages(input_language: str, output_language: str): None
+  +translate(): None
+  -_translate_text(text: str): str
+  -_llm_translate(text: str, source_lang: str, target_lang: str): str
+  +get_translated_transcript(): Dict[str, Any]
+  +to_json(indent: int = 2): str
+  +to_file(output_path: Union[str, Path]): None
+}
+
+TranscriptTranslator --> Path : uses
+TranscriptTranslator --> json : uses
+TranscriptTranslator --> copy : uses
+TranscriptTranslator ..> ValueError : raises
+TranscriptTranslator ..> TypeError : raises
+
+
+' =========================
+' Existing Service Classes
+' =========================
+
+class Summary {
+  -splitter: RecursiveJsonSplitter
+  -llm: Llama
+  --
+  +__init__(path: str | None = None)
+  +SummarizeSingle(transcript, temp: float = 0.5): str
+}
+
+class AudioTranscriber {
+  -_filepath: Path | None
+  -_transcription: Dict | None
+  --
+  +__init__(filepath: Optional[Union[str, Path]] = None)
+  +transcribe(): Dict
+  +set_path(filepath: Union[str, Path])
+  -_detect_language(): str
+  +to_file(output_path: str | Path = Path("transcription.json")): str
+  +to_json(indent: int = 2): str
+  +normalize_speaker_ids()
+}
+
+class RecursiveJsonSplitter
+class Llama
+
+Summary --> RecursiveJsonSplitter
+Summary --> Llama
+
+AudioTranscriber --> Path
+AudioTranscriber --> json
+AudioTranscriber ..> TypeError
+AudioTranscriber ..> ValueError
+AudioTranscriber ..> IOError
+
+
+' =========================
+' Configuration
+' =========================
+
+class BaseSettings
+class SettingsConfigDict
+
+class NotebookSettings {
+  +hf_token: str
+  --
+  +model_config: SettingsConfigDict
+}
+
+BaseSettings <|-- NotebookSettings
+NotebookSettings --> SettingsConfigDict
+
+
+' =========================
+' Domain Model
+' =========================
+
+class ClientProfile {
+  +id: int
+  +psychologist_account_id: int
+  +client_code: str
+  +first_name: str | None
+  +last_name: str | None
+  +dob: str | None
+  +notes: str | None
+}
+
+class SessionRecord {
+  +id: int
+  +psychologist_account_id: int
+  +client_profile_id: int
+  +source_audio_path: str
+  +detected_language: str | None
+  +transcript_text: str | None
+  +summary_text: str | None
+  +created_at: str
+}
+
+class RecordCounts {
+  +client_count: int
+  +session_count: int
+}
+
+class Account {
+  +id: int
+  +username: str
+  +display_name: str
+  +role: str
+  +is_active: bool
+}
+
+ClientProfile "1" <-- "0..*" SessionRecord : client_profile_id
+Account "1" <-- "0..*" ClientProfile : psychologist_account_id
+Account "1" <-- "0..*" SessionRecord : psychologist_account_id
+
+ClientProfile --> RecordCounts
+SessionRecord --> RecordCounts
+
+
+' =========================
+' Exception Hierarchy
+' =========================
+
+class RuntimeError
+
+class DatabaseInitializationError
+class MissingDatabaseKeyError
+class InvalidDatabaseKeyError
+
+class AuthenticationError
+class AuthorizationError
+class AccountExistsError
+
+RuntimeError <|-- DatabaseInitializationError
+DatabaseInitializationError <|-- MissingDatabaseKeyError
+DatabaseInitializationError <|-- InvalidDatabaseKeyError
+
+RuntimeError <|-- AuthenticationError
+RuntimeError <|-- AuthorizationError
+RuntimeError <|-- AccountExistsError
+@enduml
