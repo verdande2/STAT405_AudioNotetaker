@@ -293,7 +293,7 @@ class UploadPage(QWidget):
         
         queue_header.addStretch()
         
-        clear_btn = QPushButton("Clear All")
+        clear_btn = QPushButton("✖ Clear All")
         clear_btn.setObjectName("secondaryButton")
         clear_btn.setStyleSheet("padding: 8px 16px;")
         clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -428,7 +428,7 @@ class UploadPage(QWidget):
         # summarize the things!
         print(f"Summarizing file: {file_path}") if DEBUG else None
         
-        main_win = main_win = self.window()
+        main_win = self.window()
         summarizer = getattr(main_win, 'summarizer', None)
         summary_text_clean = None # so we can detect if the summary was assigned or not, at end of method
         
@@ -544,8 +544,7 @@ class UploadPage(QWidget):
         
         print(f"Finished processing file: {file_path} successfully!") if DEBUG else None
         print(f"Final transcription JSON with added summary and metadata: {transcription}") if DEBUG else None
-        
-    
+           
     def _start_processing(self):
         """Start processing queued files."""
         
