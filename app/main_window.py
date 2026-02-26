@@ -4,7 +4,7 @@ Main Window for TranscribeNotes Application
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QStackedWidget, QFrame, QSizePolicy
+    QLabel, QPushButton, QStackedWidget, QFrame, QSizePolicy, QMessageBox, QApplication
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
@@ -17,6 +17,8 @@ from app.pages.transcripts import TranscriptsPage
 from app.pages.accounts import AccountsPage
 from app.pages.settings import SettingsPage
 from app.pages.login import LoginPage
+from app.db import AuthorizationError, DatabaseInitializationError, InvalidDatabaseKeyError, MissingDatabaseKeyError
+from app.services import AudioSessionProcessor
 
 
 class NavigationButton(QPushButton):
@@ -139,23 +141,19 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("TranscribeNotes - Clinical Documentation System")
         self.setMinimumSize(1200, 800)
-        
-        
-        self.settings = {} # default to blank settings, load defaults if settings can't be pulled from .env or whatever
-        
+        self.current_account = None
+        self.audio_processor = AudioSessionProcessor()
+
         # application-wide settings and helper objects
+        self.settings = {}
         self.summarizer = None
         self.summarizer_init_error = None
-        self._patient_dataset = {} # blank dict TODO make me a model! oooh la la
-
-        # load defaults so that there is always at least sane defaults to work off
-        if not self.settings:
-            self._load_default_settings()
-
-        # TODO add global config for transcription and translation, etc
 
         self._setup_ui()
-        self._connect_signals() # setup event handlers
+        self._connect_signals()
+
+        # load defaults so that there is always at least a summarizer path
+        self._load_default_settings()
 
         # Start with login page
         self._show_login()
@@ -210,7 +208,6 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(self.settings_page)   # 6
         self.pages.addWidget(self.patient_detail_page) # 7
     
-    # event handlers
     def _connect_signals(self):
         # Sidebar navigation
         self.sidebar.navigation_changed.connect(self._on_navigation_changed)
@@ -222,20 +219,25 @@ class MainWindow(QMainWindow):
         # Patients page - view patient detail
         self.patients_page.view_patient_requested.connect(self._on_view_patient)
         
-        # Patients page - edit patient details
-        self.patients_page.edit_patient_requested.connect(self._on_edit_patient)
-        
         # Patient detail - back to list
         self.patient_detail_page.back_requested.connect(self._on_back_to_patients)
+
+        # Accounts page - keep signed-in session in sync with edits/deletes
+        self.accounts_page.authenticated_account_updated.connect(
+            self._on_authenticated_account_updated
+        )
+        self.accounts_page.authenticated_account_deleted.connect(
+            self._on_authenticated_account_deleted
+        )
         
         # Upload page - link to patients
         self.upload_page.patient_selection_requested.connect(
             # TODO handle event here, when user selects "new patient" from the upload page
-            # TODO need to redirect to patients page with new patient dialog open, figure out how to make happen
             # do stuff
             
-            lambda: self._on_navigation_changed(2)  # emit the nav change event, should update things as needed
+            lambda: self._on_navigation_changed(2)  # Go to patients page
         )
+        self.upload_page.upload_started.connect(self._on_upload_started)
 
         # Settings page - when the user saves settings, update our state
         self.settings_page.settings_changed.connect(self._on_settings_changed)
@@ -243,16 +245,42 @@ class MainWindow(QMainWindow):
     def _on_navigation_changed(self, index: int):
         """Handle sidebar navigation changes."""
         # Map sidebar index to page index (offset by 1 for login page)
+        if index == 0:
+            self.dashboard_page.refresh_from_database()
+        if index == 1:
+            self.upload_page.refresh_patients()
+        if index == 2:
+            self.patients_page.refresh_patients()
+        if index == 3:
+            self.transcripts_page.refresh_transcripts()
+        if index == 4:
+            self.accounts_page.refresh_accounts()
         self.pages.setCurrentIndex(index + 1)
     
     def _on_login_success(self, username: str, role: str):
         """Handle successful login."""
+        self.current_account = self.login_page.current_account
         self.sidebar.set_user(username, role)
+        self.dashboard_page.set_authenticated_account(self.current_account)
+        self.upload_page.set_authenticated_account(self.current_account)
+        self.patients_page.set_authenticated_account(self.current_account)
+        self.patient_detail_page.set_authenticated_account(self.current_account)
+        self.transcripts_page.set_authenticated_account(self.current_account)
+        self.accounts_page.set_authenticated_account(self.current_account)
         self.sidebar.setVisible(True)
+        self.dashboard_page.refresh_from_database()
         self.pages.setCurrentIndex(1)  # Dashboard
     
     def _on_logout(self):
         """Handle logout request."""
+        self.current_account = None
+        self.login_page.current_account = None
+        self.dashboard_page.set_authenticated_account(None)
+        self.upload_page.set_authenticated_account(None)
+        self.patients_page.set_authenticated_account(None)
+        self.patient_detail_page.set_authenticated_account(None)
+        self.transcripts_page.set_authenticated_account(None)
+        self.accounts_page.set_authenticated_account(None)
         self._show_login()
     
     def _show_login(self):
@@ -262,18 +290,127 @@ class MainWindow(QMainWindow):
     
     def _on_view_patient(self, patient_id: int):
         """Handle request to view patient details."""
+        self.patient_detail_page.set_authenticated_account(self.current_account)
         self.patient_detail_page.load_patient(patient_id)
         self.pages.setCurrentIndex(7)  # Patient detail page
     
-    def _on_edit_patient(self, patient_id: int):
-        """Handle request to edit patient details. Will automatically show the edit patient dialog."""
-        self.patient_detail_page.load_patient(patient_id)
-        self.pages.setCurrentIndex(7)  # Patient detail page
-        
     def _on_back_to_patients(self):
         """Return to patients list."""
         self.pages.setCurrentIndex(3)  # Patients page
         self.sidebar.set_active_page(2)  # Update sidebar selection
+
+    def _on_authenticated_account_updated(self, account):
+        """Update current session after editing the signed-in account."""
+        self.current_account = account
+        self.login_page.current_account = account
+        role = "Administrator" if getattr(account, "role", "") == "admin" else "Psychologist"
+        self.sidebar.set_user(account.display_name, role)
+        self.dashboard_page.set_authenticated_account(account)
+        self.upload_page.set_authenticated_account(account)
+        self.patients_page.set_authenticated_account(account)
+        self.patient_detail_page.set_authenticated_account(account)
+        self.transcripts_page.set_authenticated_account(account)
+        self.accounts_page.set_authenticated_account(account)
+
+    def _on_authenticated_account_deleted(self):
+        """Force logout when the signed-in account is deleted."""
+        self._on_logout()
+
+    def _on_upload_started(self, files: list[str], patient_id: int):
+        """Process queued uploads and persist sessions.
+
+        Pipeline stages are delegated to `AudioSessionProcessor`, which keeps a
+        placeholder transcription stage until speech-to-text is integrated.
+        """
+        account = self.current_account
+        if account is None or getattr(account, "role", None) != "psychologist":
+            QMessageBox.warning(
+                self,
+                "Upload Audio",
+                "Sign in as a psychologist to process uploads.",
+            )
+            self.upload_page.finish_processing()
+            return
+
+        if not files:
+            self.upload_page.finish_processing()
+            return
+
+        successes = 0
+        failures: list[tuple[str, str]] = []
+
+        for file_path in files:
+            try:
+                self.upload_page.set_file_progress(file_path, 5)
+                QApplication.processEvents()
+
+                processed_result = self.audio_processor.process_audio_file(
+                    psychologist_account_id=account.id,
+                    client_profile_id=patient_id,
+                    source_audio_path=file_path,
+                    progress_callback=lambda value, fp=file_path: self._update_upload_progress(fp, value),
+                )
+                # `process_audio_file()` persists `summary_text` to the session
+                # record before returning. Keeping the result here makes it easy
+                # to add UI hooks that use the generated summary later.
+                _ = processed_result.summary_text
+                self.upload_page.set_file_complete(file_path)
+                QApplication.processEvents()
+                successes += 1
+            except (
+                AuthorizationError,
+                MissingDatabaseKeyError,
+                InvalidDatabaseKeyError,
+                DatabaseInitializationError,
+            ) as exc:
+                message = str(exc)
+                self.upload_page.set_file_error(file_path, "DB/Auth Error")
+                failures.append((file_path, message))
+                QApplication.processEvents()
+            except Exception as exc:
+                message = str(exc) or exc.__class__.__name__
+                self.upload_page.set_file_error(file_path, "Processing Error")
+                failures.append((file_path, message))
+                QApplication.processEvents()
+
+        self._refresh_after_upload_processing(patient_id=patient_id)
+        self.upload_page.finish_processing(clear_completed=(successes > 0 and not failures))
+
+        if failures:
+            error_lines = "\n".join(
+                f"- {file}: {reason}" for file, reason in failures[:5]
+            )
+            suffix = "\n..." if len(failures) > 5 else ""
+            QMessageBox.warning(
+                self,
+                "Upload Processing Complete",
+                f"Processed {successes} file(s) successfully.\n"
+                f"Failed: {len(failures)}\n\n"
+                f"{error_lines}{suffix}",
+            )
+            return
+
+        QMessageBox.information(
+            self,
+            "Upload Processing Complete",
+            f"Processed and saved {successes} file(s).",
+        )
+
+    def _update_upload_progress(self, file_path: str, value: int):
+        self.upload_page.set_file_progress(file_path, value)
+        QApplication.processEvents()
+
+    def _refresh_after_upload_processing(self, *, patient_id: int | None = None):
+        self.dashboard_page.refresh_from_database()
+        self.patients_page.refresh_patients()
+        self.transcripts_page.refresh_transcripts()
+        self.upload_page.refresh_patients()
+        if (
+            patient_id is not None
+            and getattr(self.patient_detail_page, "current_patient_id", None) == patient_id
+            and self.current_account is not None
+        ):
+            self.patient_detail_page.load_patient(patient_id)
 
     def _load_default_settings(self):
         """Populate ``self.settings`` with every key the settings page uses.
@@ -289,12 +426,12 @@ class MainWindow(QMainWindow):
             'output_language': 'en',
             'word_timestamps': True,
             'speaker_diarization': False,
-            'model_path': 'llm_models/Qwen3-4B-Q5_0.gguf',
+            'model_path': 'models/Qwen3-4B-Q5_0.gguf',
             'summary_length': 'standard',
             'include_quotes': True,
             'behavioral_themes': True,
             'treatment_suggestions': False,
-            'storage_path': 'storage', # should be project root relative path
+            'storage_path': '/var/lib/transcribenotes/data',
             'auto_backup': True,
             'backup_retention': 30,
             'processing_device': 'auto',
@@ -305,6 +442,7 @@ class MainWindow(QMainWindow):
             'confirm_delete': True,
             'show_notifications': True,
         }
+        self._sync_audio_processor_config()
         # ensure summarizer object exists for the default
         self._ensure_summarizer()
 
@@ -315,6 +453,7 @@ class MainWindow(QMainWindow):
         heavy objects that depend on the values (currently just the
         summarizer model)."""
         self.settings.update(new_settings)
+        self._sync_audio_processor_config()
         # if summarizer model path changed we need a new instance
         self._ensure_summarizer(force_reload=True)
 
@@ -333,19 +472,18 @@ class MainWindow(QMainWindow):
                 # if path is somehow empty, let Summary figure out default
                 self.summarizer = Summary(path=model_path if model_path else None)
                 self.summarizer_init_error = None
+                self.audio_processor.set_summarizer(self.summarizer)
             except Exception as exc:
                 self.summarizer = None
                 self.summarizer_init_error = str(exc)
+                self.audio_processor.set_summarizer(None)
                 return
 
     def get_summarizer(self):
         """Return the current summarizer instance (may be ``None``)."""
         return self.summarizer
 
-    def _ensure_patient_dataset(self):
-        """Ensure patient dataset is available from the main window object (this is the master object for containing all patient data)."""
-        
-        if not self._patient_dataset:
-            print(f"Main Window: No patient dataset found! Can't init!") if DEBUG else None
-            raise ValueError("Main Window: No patient dataset found! Can't init! ABORT!")
-        
+    def _sync_audio_processor_config(self) -> None:
+        """Keep the upload processor aligned with current summarizer settings."""
+        model_path = self.settings.get('model_path') if isinstance(self.settings, dict) else None
+        self.audio_processor.set_model_path(model_path)

@@ -13,6 +13,14 @@ from PySide6.QtCore import Qt, Signal, QMimeData
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
 from pathlib import Path
 from app.components.no_scroll_combo import NoScrollComboBox
+from app.db import (
+    AuthorizationError,
+    DatabaseInitializationError,
+    InvalidDatabaseKeyError,
+    MissingDatabaseKeyError,
+    list_client_profiles,
+)
+from app.services.placeholder_transcript import load_placeholder_transcript_json
 
 import json, random
 from datetime import datetime
@@ -180,6 +188,8 @@ class UploadPage(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._current_account = None
+        self._is_processing = False
         self.queued_files = []
         self.file_widgets = {}
         self._setup_ui()
@@ -238,6 +248,8 @@ class UploadPage(QWidget):
         self.patient_combo.setMinimumWidth(300)
         self.patient_combo.addItem("-- Select Patient --", None)
         self.patient_combo.addItem("+ Create New Patient", "new")
+        self.patient_combo.setEnabled(False)
+        self.patient_combo.currentIndexChanged.connect(self._update_queue_ui)
         
         # for now, let's generate some dummy data!
         first_names = [
@@ -364,7 +376,8 @@ class UploadPage(QWidget):
         count = len(self.queued_files)
         self.queue_count.setText(f"{count} file{'s' if count != 1 else ''}")
         self.empty_queue_label.setVisible(count == 0)
-        self.process_btn.setEnabled(count > 0)
+        patient_selected = self.patient_combo.currentData() not in (None, "new")
+        self.process_btn.setEnabled((count > 0) and patient_selected and not self._is_processing)
     
     def _process_file(self, file_path: str):
 
@@ -452,7 +465,10 @@ class UploadPage(QWidget):
                     }
 
             try:
-                result = summarizer.SummarizeSingle(transcript=transcription)
+                # Temporary: force a shared placeholder transcript into all
+                # summarizer calls until the transcriber is implemented.
+                summarizer_input = load_placeholder_transcript_json()
+                result = summarizer.SummarizeSingle(transcript=summarizer_input)
                 # ensure we have plain text
                 if isinstance(result, dict):
                     summary_text = result.get('choices', [{}])[0].get('text', '')
@@ -553,39 +569,37 @@ class UploadPage(QWidget):
             return
         
         if patient_id is None:
+            QMessageBox.information(
+                self,
+                "Upload Audio",
+                "Select a patient before starting processing.",
+            )
             # TODO: Show error - no patient selected
             print(f"No patient selected! Returning!") if DEBUG else None
             
             return
         
-        # process the file queue, one at a time, updating corresponding ui widget as we go
-        for file_path, widget in zip(self.queued_files, self.file_widgets.values()): # ASSUMING the order of queued files matches the order of widgets, TODO VERIFY THIS
-            print(f"Processing file: {file_path}") if DEBUG else None
-            
+        self._is_processing = True
+        self.process_btn.setText("Processing...")
+        self.process_btn.setEnabled(False)
+
+        # Mark all files as processing
+        for widget in self.file_widgets.values():
             widget.set_processing()
-            
-            self.upload_started.emit(self.queued_files, patient_id) # not sure if this is an emitted event for ALL of the queued files, or just singles and too tired to determine this at 3:52 am 
-            
-            try:
-                self._process_file(file_path)
-                
-                widget.set_complete()  # mark files complete so the user sees something happen
-                print(f"Finished processing file: {file_path} successfully!") if DEBUG else None
-                
-            except Exception as e:
-                # TODO handle errors in a better way
-                self.set_file_progress(file_path, progress=0)  # epic fail
-                self.set_file_error(
-                    file_path, "Unknown error processing file: ERROR CODE 0xDEADBEEF"
-                )
-                print(f"Processing file: {file_path} failed with error: {e}") if DEBUG else None
-                raise e # pass one down, pass it around, 99 exceptions of beer on the ... wall?
+        
+        # process the file queue, one at a time, updating corresponding ui widget as we go
+        self.upload_started.emit(list(self.queued_files), int(patient_id))
+        # The main window handles the actual processing pipeline and DB writes
+        # (including storing the model's returned summary on the session
+        # record). Do not run the legacy local `_process_file()` flow here or
+        # we will double-process uploads and bypass the DB-backed path.
+        return
             
         # TODO: Hook up to backend endpoint
         
         # For skeleton demo, simulate progress
         # In production, this would be replaced with actual backend calls
-        # note: moved calls to update file progress and error and progress bars to the _process_file method above
+        # note: moved calls to update file progress and error and progress bars to the main window handler
     
     def set_file_progress(self, file_path: str, progress: int):
         """Update progress for a specific file."""
@@ -601,6 +615,65 @@ class UploadPage(QWidget):
         """Mark a file as error."""
         if file_path in self.file_widgets:
             self.file_widgets[file_path].set_error(message)
+
+    def finish_processing(self, *, clear_completed: bool = False):
+        """Restore controls after a processing run."""
+        self._is_processing = False
+        self.process_btn.setText("Start Processing")
+        if clear_completed:
+            self._clear_queue()
+            return
+        self._update_queue_ui()
+
+    def set_authenticated_account(self, account):
+        """Set signed-in account context and refresh available patients."""
+        self._current_account = account
+        self.refresh_patients()
+
+    def refresh_patients(self):
+        """Load patient options for the current psychologist."""
+        account = self._current_account
+        self.patient_combo.blockSignals(True)
+        current_selection = self.patient_combo.currentData() if self.patient_combo.count() else None
+        self.patient_combo.clear()
+        self.patient_combo.addItem("-- Select Patient --", None)
+        self.patient_combo.addItem("+ Create New Patient", "new")
+        self.patient_combo.setEnabled(False)
+
+        if account is None or getattr(account, "role", None) != "psychologist":
+            self.patient_combo.blockSignals(False)
+            self._update_queue_ui()
+            return
+
+        try:
+            patients = list_client_profiles(account.id)
+        except (
+            AuthorizationError,
+            MissingDatabaseKeyError,
+            InvalidDatabaseKeyError,
+            DatabaseInitializationError,
+        ):
+            self.patient_combo.blockSignals(False)
+            self._update_queue_ui()
+            return
+        except Exception:
+            self.patient_combo.blockSignals(False)
+            self._update_queue_ui()
+            return
+
+        for patient in patients:
+            first = (patient.first_name or "").strip()
+            last = (patient.last_name or "").strip()
+            name = " ".join(part for part in [first, last] if part) or "Unnamed Patient"
+            display = f"{name} (ID: {patient.id})"
+            self.patient_combo.addItem(display, patient.id)
+
+        self.patient_combo.setEnabled(self.patient_combo.count() > 2)
+        if current_selection is not None:
+            index = self.patient_combo.findData(current_selection)
+            self.patient_combo.setCurrentIndex(index if index >= 0 else 0)
+        self.patient_combo.blockSignals(False)
+        self._update_queue_ui()
     
     def load_patients(self, patients: list):
         """Populate patient dropdown from backend.
@@ -614,5 +687,8 @@ class UploadPage(QWidget):
         self.patient_combo.addItem("+ Create New Patient", "new")
         
         for patient in patients:
-            display = f"{patient['name']} (MRN: {patient['mrn']})"
+            mrn = patient.get('mrn')
+            display = f"{patient['name']} (MRN: {mrn})" if mrn else patient['name']
             self.patient_combo.addItem(display, patient['id'])
+        self.patient_combo.setEnabled(self.patient_combo.count() > 2)
+        self._update_queue_ui()
