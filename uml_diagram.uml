@@ -2,11 +2,9 @@
 ' =========================
 ' JSON Type Aliases
 ' =========================
-
 class JSONVal <<type>>
 class JSONArray <<type>>
 class JSONObject <<type>>
-
 JSONVal <|-- JSONArray
 JSONVal <|-- JSONObject
 
@@ -14,7 +12,6 @@ JSONVal <|-- JSONObject
 ' =========================
 ' Transcript Translator
 ' =========================
-
 class TranscriptTranslator {
   -_transcript_source: Path | None
   -_transcript_data: Dict[str, Any] | None
@@ -33,7 +30,6 @@ class TranscriptTranslator {
   +to_json(indent: int = 2): str
   +to_file(output_path: Union[str, Path]): None
 }
-
 TranscriptTranslator --> Path : uses
 TranscriptTranslator --> json : uses
 TranscriptTranslator --> copy : uses
@@ -44,15 +40,13 @@ TranscriptTranslator ..> TypeError : raises
 ' =========================
 ' Existing Service Classes
 ' =========================
-
 class Summary {
-  -splitter: RecursiveJsonSplitter
-  -llm: Llama
+  -_splitter: RecursiveJsonSplitter
+  -_llm: Llama
   --
   +__init__(path: str | None = None)
-  +SummarizeSingle(transcript, temp: float = 0.5): str
+  +summarize_single(transcript, temp: float = 0.5): str
 }
-
 class AudioTranscriber {
   -_filepath: Path | None
   -_transcription: Dict | None
@@ -65,13 +59,10 @@ class AudioTranscriber {
   +to_json(indent: int = 2): str
   +normalize_speaker_ids()
 }
-
 class RecursiveJsonSplitter
 class Llama
-
 Summary --> RecursiveJsonSplitter
 Summary --> Llama
-
 AudioTranscriber --> Path
 AudioTranscriber --> json
 AudioTranscriber ..> TypeError
@@ -82,34 +73,39 @@ AudioTranscriber ..> IOError
 ' =========================
 ' Configuration
 ' =========================
-
 class BaseSettings
 class SettingsConfigDict
-
-class NotebookSettings {
+class AppSettings {
   +hf_token: str
   --
   +model_config: SettingsConfigDict
 }
-
-BaseSettings <|-- NotebookSettings
-NotebookSettings --> SettingsConfigDict
+BaseSettings <|-- AppSettings
+AppSettings --> SettingsConfigDict
 
 
 ' =========================
 ' Domain Model
 ' =========================
-
+class Role {
+  +id: int
+  +name: str
+  +description: str | None
+}
+class ClientCode {
+  +id: int
+  +name: str
+  +description: str | None
+}
 class ClientProfile {
   +id: int
   +psychologist_account_id: int
-  +client_code: str
+  +client_code_id: int
   +first_name: str | None
   +last_name: str | None
-  +dob: str | None
+  +dob: datetime | None
   +notes: str | None
 }
-
 class SessionRecord {
   +id: int
   +psychologist_account_id: int
@@ -120,24 +116,22 @@ class SessionRecord {
   +summary_text: str | None
   +created_at: str
 }
-
 class RecordCounts {
   +client_count: int
   +session_count: int
 }
-
 class Account {
   +id: int
   +username: str
   +display_name: str
-  +role: str
+  +role_id: int
   +is_active: bool
 }
-
+Role "1" <-- "0..*" Account : role_id
+ClientCode "1" <-- "0..*" ClientProfile : client_code_id
 ClientProfile "1" <-- "0..*" SessionRecord : client_profile_id
 Account "1" <-- "0..*" ClientProfile : psychologist_account_id
 Account "1" <-- "0..*" SessionRecord : psychologist_account_id
-
 ClientProfile --> RecordCounts
 SessionRecord --> RecordCounts
 
@@ -145,21 +139,16 @@ SessionRecord --> RecordCounts
 ' =========================
 ' Exception Hierarchy
 ' =========================
-
 class RuntimeError
-
 class DatabaseInitializationError
 class MissingDatabaseKeyError
 class InvalidDatabaseKeyError
-
 class AuthenticationError
 class AuthorizationError
 class AccountExistsError
-
 RuntimeError <|-- DatabaseInitializationError
 DatabaseInitializationError <|-- MissingDatabaseKeyError
 DatabaseInitializationError <|-- InvalidDatabaseKeyError
-
 RuntimeError <|-- AuthenticationError
 RuntimeError <|-- AuthorizationError
 RuntimeError <|-- AccountExistsError
