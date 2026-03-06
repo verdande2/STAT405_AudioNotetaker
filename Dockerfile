@@ -49,7 +49,7 @@ RUN git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git ffmpeg \
 # ============================================================
 # Stage 2 — Runtime
 # ============================================================
-FROM python:3.14-slim-bookworm
+FROM python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -97,7 +97,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 # Install CUDA Torch (works on CPU too)
 # Using cu121 for best compatibility
 # ------------------------------------------------------------
-RUN uv pip install --no-cache-dir \
+RUN uv pip install --no-cache-dir --system \
     --index-url https://download.pytorch.org/whl/cu121 \
     torch torchvision torchaudio
 
