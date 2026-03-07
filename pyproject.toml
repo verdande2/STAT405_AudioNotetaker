@@ -11,6 +11,9 @@ dependencies = [
     "transcribe-anything>=3.2.4",
 ]
 
+[tool.setuptools.packages.find]
+include = ["app*"]
+
 [project.optional-dependencies]
 local-llm = [
     "llama-cpp-python>=0.3.16",
