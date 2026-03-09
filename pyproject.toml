@@ -3,12 +3,20 @@ name = "stat405-audionotetaker"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
+    "dataclasses>=0.8",
+    "faster-whisper>=1.2.1",
     "langchain-text-splitters>=1.1.1",
+    "numpy>=2.4.2",
+    "pathlib>=1.0.1",
+    "pydantic-settings>=2.13.1",
     "pyside6>=6.10.2",
     "sqlcipher3>=0.6.2",
-    "transcribe-anything>=3.2.4",
+    "torch>=2.8.0",
+    "torchaudio>=2.8.0",
+    "typing>=3.10.0.0",
+    "whisperx>=3.8.1",
 ]
 
 [project.optional-dependencies]

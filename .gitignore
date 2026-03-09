@@ -219,3 +219,6 @@ data/*.db-*
 /models/
 /logs/
 *.gguf
+
+test_notebooks/transcript.json
+test_notebooks/transcript.txt

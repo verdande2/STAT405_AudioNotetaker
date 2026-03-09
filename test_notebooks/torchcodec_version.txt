@@ -1,0 +1,5 @@
+Name: torchcodec
+Version: 0.10.0
+Location: Z:\code\STAT405_AudioNotetaker\.venv\Lib\site-packages
+Requires:
+Required-by: pyannote-audio
