@@ -1,0 +1,118 @@
+andrew.sparkes@Legolas MINGW64 /z/code/STAT405_AudioNotetaker (Sparkes)
+$ uv add whisperx > error.txt
+  x No solution found when resolving dependencies:
+  `-> Because only the following versions of whisperx are available:
+          whisperx==3.1.1
+          whisperx==3.1.2
+          whisperx==3.1.3
+          whisperx==3.1.4
+          whisperx==3.1.5
+          whisperx==3.1.6
+          whisperx==3.2.0
+          whisperx==3.3.0
+          whisperx==3.3.1
+          whisperx==3.3.2
+          whisperx==3.3.3
+          whisperx==3.3.4
+          whisperx==3.4.0
+          whisperx==3.4.1
+          whisperx==3.4.2
+          whisperx==3.4.3
+          whisperx==3.5.0
+          whisperx==3.6.0
+          whisperx==3.7.0
+          whisperx==3.7.1
+          whisperx==3.7.2
+          whisperx==3.7.3
+          whisperx==3.7.4
+          whisperx==3.7.5
+          whisperx==3.7.6
+          whisperx==3.7.7
+          whisperx==3.8.0
+          whisperx==3.8.1
+      and whisperx<=3.1.2 was yanked (reason: unofficial release by third party (see
+      https://github.com/m-bain/whisperX/issues/761)), we can conclude that whisperx<=3.1.2 cannot be used.
+      And because whisperx==3.1.3 was yanked (reason: unofficial release by third party (see
+      https://github.com/m-bain/whisperX/issues/761)), we can conclude that whisperx<3.1.4 cannot be used.
+      And because whisperx>=3.1.4,<=3.1.6 was yanked (reason: unofficial release by third party (see
+      https://github.com/m-bain/whisperX/issues/761)) and whisperx==3.2.0 depends on pyannote-audio==3.1.1, we can conclude that
+      whisperx<3.3.0 depends on pyannote-audio==3.1.1.
+      And because whisperx>=3.3.0,<=3.3.1 depends on pyannote-audio==3.3.2 and whisperx==3.3.2 was yanked (reason: dependency
+      issues), we can conclude that whisperx<3.3.3 depends on one of:
+          pyannote-audio==3.1.1
+          pyannote-audio==3.3.2
+
+      And because all of:
+          whisperx>=3.3.0,<=3.3.1
+          whisperx>=3.3.3,<=3.4.3
+      depend on ctranslate2<4.5.0 and torchaudio>=2.8.0,<2.9.dev0, we can conclude that ctranslate2>=4.5.0, all of:
+          pyannote-audio<3.1.1
+          pyannote-audio>3.1.1,<3.3.2
+          pyannote-audio>3.3.2
+      , all of:
+          torchaudio<2.8.0
+          torchaudio>=2.9.dev0
+      , all of:
+          whisperx<3.5.0
+          whisperx>3.7.3
+       are incompatible.
+      And because whisperx==3.7.3 was yanked (reason: incompatible torch, torchaudio version) and all of:
+          whisperx>=3.4.3,<=3.7.2
+          whisperx>=3.7.4,<=3.7.7
+      depend on pyannote-audio>=3.3.2,<4.0.0, we can conclude that ctranslate2>=4.5.0, all of:
+          pyannote-audio<3.1.1
+          pyannote-audio>3.1.1,<3.3.2
+          pyannote-audio>=4.0.0
+      , all of:
+          torchaudio<2.8.0
+          torchaudio>=2.9.dev0
+      , all versions of whisperx are incompatible. (1)
+
+      Because only the following versions of ctranslate2 are available:
+          ctranslate2<=4.0.0
+          ctranslate2==4.1.0
+          ctranslate2==4.2.1
+          ctranslate2==4.3.1
+          ctranslate2==4.4.0
+          ctranslate2>=4.5.0
+      and ctranslate2>=4.0.0,<=4.4.0 has no wheels with a matching Python version tag (e.g., `cp314`), we can conclude that
+      ctranslate2>=4.0.0,<=4.4.0 cannot be used.
+      And because we know from (1) that ctranslate2>=4.5.0, all of:
+          pyannote-audio<3.1.1
+          pyannote-audio>3.1.1,<3.3.2
+          pyannote-audio>=4.0.0
+      , all of:
+          torchaudio<2.8.0
+          torchaudio>=2.9.dev0
+      , all versions of whisperx are incompatible, we can conclude that ctranslate2>=4.0.0, all of:
+          pyannote-audio<3.1.1
+          pyannote-audio>3.1.1,<3.3.2
+          pyannote-audio>=4.0.0
+      , all of:
+          torchaudio<2.8.0
+          torchaudio>=2.9.dev0
+      , all versions of whisperx are incompatible.
+      And because faster-whisper==1.2.1 depends on ctranslate2>=4.0 and only faster-whisper<=1.2.1 is available, we can conclude
+      that faster-whisper>=1.2.1, all of:
+          pyannote-audio<3.1.1
+          pyannote-audio>3.1.1,<3.3.2
+          pyannote-audio>=4.0.0
+      , all of:
+          torchaudio<2.8.0
+          torchaudio>=2.9.dev0
+      , all versions of whisperx are incompatible.
+      And because your project depends on faster-whisper>=1.2.1 and pyannote-audio>=4.0.1, we can conclude that your project, all
+      of:
+          torchaudio<2.8.0
+          torchaudio>=2.9.dev0
+      , all versions of whisperx are incompatible.
+      And because your project depends on torchaudio>=2.10.0 and whisperx, we can conclude that your project's requirements are
+      unsatisfiable.
+
+      hint: Wheels are available for `ctranslate2` (v4.4.0) with the following Python ABI tags: `cp38`, `cp39`, `cp310`, `cp311`,
+      `cp312`
+  help: If you want to add the package regardless of the failed resolution, provide the `--frozen` flag to skip locking and syncing.
+
+
+
+Conclusion: looks like we're going to go with Python v3.12.xx then, alrighty... 
