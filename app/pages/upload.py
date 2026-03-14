@@ -22,7 +22,7 @@ from app.db import (
 )
 from app.services.placeholder_transcript import load_placeholder_transcript_json
 
-import json, random
+import json, random, logging
 from datetime import datetime
 
 # importing transcriber and translator classes
@@ -265,12 +265,14 @@ class UploadPage(QWidget):
         patients = [
             f"{first} {last} (MRN: {random.randint(10000, 99999)})"
             for first, last in zip(first_names, last_names)
-        ] # TODO retrieve from db!
+        ] 
+        
+        # patients = # TODO all patient rows from db function call here (also with filters, sort, etc) !
         
         idx = 1
         for patient in patients:
             self.patient_combo.addItem(patient, idx)
-            idx += 1 # old school
+            idx += 1 # old school idx counter
             
         patient_layout.addWidget(self.patient_combo)
         
@@ -338,7 +340,7 @@ class UploadPage(QWidget):
     def _on_files_dropped(self, files: list):
         """Handle dropped files."""
         for file_path in files:
-            if file_path not in self.queued_files:
+            if file_path not in self.queued_files: # prevent duplicate files in process queue
                 self.queued_files.append(file_path) # synchronous indices, excellent...
                 self._add_file_widget(file_path)
         
@@ -379,6 +381,7 @@ class UploadPage(QWidget):
         patient_selected = self.patient_combo.currentData() not in (None, "new")
         self.process_btn.setEnabled((count > 0) and patient_selected and not self._is_processing)
     
+    
     def _process_file(self, file_path: str):
 
         self.set_file_progress(file_path, progress = 0) # we have four main phases, and can't really estimate progress on the fly easily, so we'll treat it as progress on task list, and divide the processing into transcription, translation, summarization and output sections, and update the progress bar 25% at a time (for now)
@@ -386,27 +389,26 @@ class UploadPage(QWidget):
         # transcribe the things!
         transcriber = AudioTranscriber(file_path)
         transcriber.transcribe()
-        transcription = {}
-        transcription = transcriber.to_json()
+        transcript = transcriber.to_json()
         
-        print(f"Transcribed file: {file_path} successfully!") if DEBUG else None
-        print(f"Transcription JSON: {transcription}") if DEBUG else None
+        # TODO add more meat here!
+        logging.debug(f"Raw JSON: \n{json.dumps(transcript, indent=4)}")
+        
+        logging.debug(f"Transcribed file: {file_path} successfully!") if DEBUG else None
+        logging.debug(f"Transcript JSON: {transcript}") if DEBUG else None
 
         self.set_file_progress(file_path, progress=25)
         
-        # have I written the metadata part yet? try, and catch for now
-        try:
-            lang = transcription["lang"]
-        except:
-            lang = "en_US"
+        # hardcoded language for now
+        lang = "en"
 
-        print(f"Language detected: {lang}") if DEBUG else None
+        logging.debug(f"Language detected: {lang}") if DEBUG else None
 
         # translate the things! (if needed) 
-        if transcription is not None and lang != "en_US":
-            print(f"Translating file: {file_path}") if DEBUG else None
+        if transcript is not None and lang != "en":
+            logging.debug(f"Translating file: {file_path}") if DEBUG else None
             
-            translator = TranscriptTranslator(transcription) # hand off the JSON to the translator
+            translator = TranscriptTranslator(transcript) # hand off the JSON to the translator
 
             # TODO language detection
             translator.set_languages(lang, "en_US") # sets input and output languages
@@ -414,16 +416,16 @@ class UploadPage(QWidget):
             translator.translate()
 
             # we passed in the full JSON transcript with metadata structure, we're getting back the same (with translated text) and reassigning back
-            transcription = translator.to_json()
+            transcript = translator.to_json()
             
             print(f"Translated file: {file_path} successfully!") if DEBUG else None
-            print(f"Translated transcription JSON: {transcription}") if DEBUG else None
+            print(f"Translated transcript JSON: {transcript}") if DEBUG else None
         
         self.set_file_progress(file_path, progress=50)
         # if we need to output to .json file, do it here
-        # transcription.to_file(output_file)
+        # transcript.to_file(output_file)
 
-        # print(transcription) # for debugging as needed
+        # print(transcript) # for debugging as needed
         
         # summarize the things!
         print(f"Summarizing file: {file_path}") if DEBUG else None
@@ -449,11 +451,11 @@ class UploadPage(QWidget):
             return # kick back after warning dialog # TODO why do you continue to execute after this return?!?!?! what is wrong with you??!
         
         else:
-            if not transcription: # generated above, in the transcribe/translate section
-                print(f"No transcription data found for file: {file_path}, defaulting to dummy JSON") if DEBUG else None
+            if not transcript: # generated above, in the transcribe/translate section
+                print(f"No transcript data found for file: {file_path}, defaulting to dummy JSON") if DEBUG else None
                 
                 # fallback to a minimal dummy transcript # TODO replace with proper metadata structure and sample transcript/summary, it will roughly be this structure
-                transcription = {
+                transcript = {
                     "lang": "en_US",
                     "model": "whisper-small-v2",
                     "date_created": "2026-01-01 00:00:00",
@@ -523,27 +525,27 @@ class UploadPage(QWidget):
                 
         self.set_file_progress(file_path, progress=75)
         
-        # once we've made it this far, we should have a JSON object in `transcription`, and we have the summary in `summary_text_clean`, just need to merge them together (maintaining the JSON metadata structure) and dump it where we need to put it
+        # once we've made it this far, we should have a JSON object in `transcript`, and we have the summary in `summary_text_clean`, just need to merge them together (maintaining the JSON metadata structure) and dump it where we need to put it
         if summary_text_clean is not None:
-            transcription["summary"] = summary_text_clean
-            transcription["summary_wordcount"] = len(summary_text_clean.split(" "))
-            transcription["summary_accuracy_score"] = 0.0 # TODO implement me somewhere!
+            transcript["summary"] = summary_text_clean
+            transcript["summary_wordcount"] = len(summary_text_clean.split(" "))
+            transcript["summary_accuracy_score"] = 0.0 # TODO implement me somewhere! in transcript_utils, ofc!
         else:
-            transcription["summary"] = "No summary available"
+            transcript["summary"] = "No summary available"
             print(f"No clean summary available for file: {file_path}") if DEBUG else None
         
-        # TODO store transcription JSON obj somewhere!
+        # TODO store transcript JSON obj somewhere!
         # to get the JSON string:
-        # string_version = json.dumps(transcription, ensure_ascii=False, indent=4)
+        # string_version = json.dumps(transcript, ensure_ascii=False, indent=4)
         
         # to write JSON to file:
-        # json.dump(transcription, open("output/transcription.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        # json.dump(transcript, open("output/transcript.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
         
         # finish the progress bar
         self.set_file_progress(file_path, progress=100)
         
         print(f"Finished processing file: {file_path} successfully!") if DEBUG else None
-        print(f"Final transcription JSON with added summary and metadata: {transcription}") if DEBUG else None
+        print(f"Final transcript JSON with added summary and metadata: {transcript}") if DEBUG else None
            
     def _start_processing(self):
         """Start processing queued files."""

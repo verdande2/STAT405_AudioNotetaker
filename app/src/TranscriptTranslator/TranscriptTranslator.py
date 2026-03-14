@@ -4,11 +4,12 @@ import json
 import copy
 
 # TODO implement these types in the code!
-type JSONVal = None | bool | str | float | int | JSONArray | JSONObject
-type JSONArray = list[JSONVal]
-type JSONObject = dict[str, JSONVal]
+# type JSONVal = None | bool | str | float | int | JSONArray | JSONObject
+# type JSONArray = list[JSONVal]
+# type JSONObject = dict[str, JSONVal]
 
 
+# TODO make me work!
 
 class TranscriptTranslator:
     """
@@ -16,16 +17,16 @@ class TranscriptTranslator:
 
     The class supports loading transcript data from:
         - A file path (str or Path) pointing to a JSON file
-        - A raw JSON object from json package
+        - A raw JSON/Dict object from json package
 
     Translation is applied to the "text" fields within transcript "segments", while preserving the original structure and metadata of the JSON document. See example JSON format below.
 
     The translated transcript can then be output to a JSON file, or returned as a JSON object in Python
     
-    # example internal schema for transcription json, before any post-processing:
+    # example internal schema for transcript json, before any post-processing:
     {
       "metadata": {
-        "language": "en-US", # TODO determine language standard, ie. en-US, en-GB, etc, four letter code okay?
+        "language": "en", # ISO 639 language code ie. us, es, etc
         "num_speakers": 2,
         "model": "whisper-large-v3",
         #"model_version": "3.0",
@@ -302,10 +303,10 @@ class TranscriptTranslator:
 
 
 
-# example internal schema for transcription result, before any post-processing:
+# example internal schema for transcript result, before any post-processing:
 # {
 #   "metadata": {
-#     "language": "en-US", # TODO determine language standard, ie. en-US, en-GB, etc
+#     "language": "en",
 #     "num_speakers": 2,
 #     "model": "whisper-large-v3",
 #     #"model_version": "3.0",

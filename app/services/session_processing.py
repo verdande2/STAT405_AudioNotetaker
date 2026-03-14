@@ -1,10 +1,7 @@
-"""Audio upload processing pipeline with a placeholder transcription stage.
+"""Audio upload processing pipeline
 
 This service is intentionally structured as:
 audio file -> transcription -> summarization -> DB persistence
-
-Speech-to-text is not available yet, so `transcribe_audio` currently returns a
-stub transcript while preserving the interface needed for future integration.
 """
 
 from __future__ import annotations
@@ -18,6 +15,10 @@ from app.services.placeholder_transcript import (
     load_placeholder_transcript_json,
     load_placeholder_transcript_text,
 )
+
+# TODO use these below!
+from app.src.AudioTranscriber.AudioTranscriber import AudioTranscriber
+from app.src.TranscriptTranslator.TranscriptTranslator import TranscriptTranslator
 
 try:
     from app.lm.Summarizer import Summary as LlamaSummary

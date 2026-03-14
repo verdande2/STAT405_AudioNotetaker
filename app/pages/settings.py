@@ -105,8 +105,8 @@ class SettingsPage(QWidget):
         # Transcription Settings
         transcription_section = SettingsSection(
             "Transcription Settings",
-            "Configure speech-to-text processing options"
-        )
+            "Configure ASR/speech-to-text/transcription processing options"
+        ) # TODO add front-end for settings here
         
         trans_form = QFormLayout()
         trans_form.setSpacing(12)

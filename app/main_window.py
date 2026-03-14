@@ -17,7 +17,15 @@ from app.pages.transcripts import TranscriptsPage
 from app.pages.accounts import AccountsPage
 from app.pages.settings import SettingsPage
 from app.pages.login import LoginPage
-from app.db import AuthorizationError, DatabaseInitializationError, InvalidDatabaseKeyError, MissingDatabaseKeyError
+
+
+from app.db import (
+    AuthorizationError,
+    DatabaseInitializationError,
+    InvalidDatabaseKeyError,
+    MissingDatabaseKeyError
+)
+
 from app.services import AudioSessionProcessor
 
 
@@ -145,18 +153,21 @@ class MainWindow(QMainWindow):
         self.audio_processor = AudioSessionProcessor()
 
         # application-wide settings and helper objects
-        self.settings = {}
+        self.settings = {} # starting with blank dict, to be populated with defaults below, and overridden by .env vars
         self.summarizer = None
         self.summarizer_init_error = None
 
         self._setup_ui()
-        self._connect_signals()
+        self._connect_signals() # set up event handlers
 
         # load defaults so that there is always at least a summarizer path
         self._load_default_settings()
+        
+        self._load_env_vars() # override any defaults with .env vars
 
         # Start with login page
         self._show_login()
+        
         self.showMaximized()
     
     def _setup_ui(self):
@@ -319,9 +330,9 @@ class MainWindow(QMainWindow):
     def _on_upload_started(self, files: list[str], patient_id: int):
         """Process queued uploads and persist sessions.
 
-        Pipeline stages are delegated to `AudioSessionProcessor`, which keeps a
-        placeholder transcription stage until speech-to-text is integrated.
+        Pipeline stages are delegated to `AudioSessionProcessor`.
         """
+        # first, check current acc role, display dialog/modal if not a psychologist role
         account = self.current_account
         if account is None or getattr(account, "role", None) != "psychologist":
             QMessageBox.warning(
@@ -329,13 +340,14 @@ class MainWindow(QMainWindow):
                 "Upload Audio",
                 "Sign in as a psychologist to process uploads.",
             )
-            self.upload_page.finish_processing()
-            return
+            self.upload_page.finish_processing() # jump to end
+            return # kick back to referrer
 
         if not files:
-            self.upload_page.finish_processing()
-            return
+            self.upload_page.finish_processing() # jump to end
+            return # kick back to referrer
 
+        # counters for success/failure (failure is a list of tuples: (file_path, reason))
         successes = 0
         failures: list[tuple[str, str]] = []
 
@@ -350,11 +362,12 @@ class MainWindow(QMainWindow):
                     source_audio_path=file_path,
                     progress_callback=lambda value, fp=file_path: self._update_upload_progress(fp, value),
                 )
+                
                 # `process_audio_file()` persists `summary_text` to the session
                 # record before returning. Keeping the result here makes it easy
                 # to add UI hooks that use the generated summary later.
                 _ = processed_result.summary_text
-                self.upload_page.set_file_complete(file_path)
+                self.upload_page.set_file_complete(file_path) # set complete for this upload item
                 QApplication.processEvents()
                 successes += 1
             except (
@@ -423,10 +436,10 @@ class MainWindow(QMainWindow):
         # copy the defaults from SettingsPage._reset_defaults manually
         self.settings = {
             'default_language': 'auto',
-            'output_language': 'en',
-            'word_timestamps': True,
-            'speaker_diarization': False,
-            'model_path': 'models/Qwen3-4B-Q5_0.gguf',
+            'output_language': 'en', # English summary/transcript output by default
+            'word_timestamps': False, # enable word-level timestamps (extra compute/time required)
+            'speaker_diarization': True,
+            'model_path': 'models/Qwen3-4B-Q5_0.gguf', # model_path is specific for the summarizer: .gguf model file
             'summary_length': 'standard',
             'include_quotes': True,
             'behavioral_themes': True,
@@ -441,7 +454,9 @@ class MainWindow(QMainWindow):
             'session_timeout': 30,
             'confirm_delete': True,
             'show_notifications': True,
+            # TODO add additional transcription/translation/diarization/etc settings to default dict here
         }
+        
         self._sync_audio_processor_config()
         # ensure summarizer object exists for the default
         self._ensure_summarizer()
