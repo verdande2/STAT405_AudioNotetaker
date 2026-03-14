@@ -3,47 +3,46 @@ dummy summarizer class
 """
 from llama_cpp import Llama
 from langchain_text_splitters import RecursiveJsonSplitter
-import json
-
-
 
 class Summary:
-    def __init__(self, path): # temporarily empty, will replace the functionality of SetParameters later
-        self.splitter = RecursiveJsonSplitter(max_chunk_size=2000, min_chunk_size=1000)
+    def __init__(self, path):
+        self.max_context = 4096
+        # if os.path.isfile("models/Qwen3-4B-Instruct-2507-UD-IQ1_S.gguf") == False:
+        #     joblib.load(
+        #         hf_hub_download(repo_id="unsloth/Qwen3-4B-Instruct-2507-GGUF", filename="Qwen3-4B-Instruct-2507-UD-IQ1_S.gguf", local_dir="models/Qwen3-4B-Instruct-2507-UD-IQ1_S.gguf")
+        #     )
+        self.splitter = RecursiveJsonSplitter(max_chunk_size=self.max_context*3, min_chunk_size=(self.max_context*3)-2000)
         self.llm = Llama(
             model_path=path,
-            n_batch= 2048,
-            n_context = 2048, #change max context size, default 2048
+            n_batch= 512,
+            n_ctx= self.max_context, #change max context size, default 2048
+            verbose=True
         )
     
-    def SummarizeSingle(self, transcript, temp = 0.5):
+    def SummarizeSingle(self, transcript, temp = 0.6, top_k = 20, top_p = 0.7, repeat_penalty = 1.2):
         chunks = self.splitter.split_json(json_data=transcript, convert_lists=True)
-        summaries = []
-        for chunk in chunks:
-            # adjust initial message for better accuracy
-            text = "The following text is a transcript from a patient meeting with a therapist. Summarize the patient's condition and the stories they tell\n "
-            for reply in chunk.values():
+        num_chunks = len(chunks)
+        if num_chunks > 1:
+            summaries = []
+            for chunk in chunks:
+                text = "The text below is a section of a transcript of a therapy session. 1. State the patient's primary concern in this session.\n 2. Summarize all of the patient's symptoms.\n 3. State the prescribed actions from the psychologist, then stop\n Then, stop. Do not add any additional thoughts, explanations, or elaborations. Do not make up information. Do not go beyond the points listed above. \n ```\n"
+                for reply in chunk.values():
+                    text = text + reply["speaker"] + ": " + reply["text"] + "\n "
+                text = text + "\n```\n"
+                output = self.llm(text, temperature=temp, top_k = top_k, top_p = top_p, repeat_penalty=repeat_penalty, max_tokens=512) # set max tokens to an amount divisible by amount we want
+                print(output["choices"][0]["text"])
+                summaries.append(output["choices"][0]["text"])
+            text = "The text below is a group of summaries from a therapy session. 1. State the patient's primary concern in this session.\n 2. Summarize all of the patient's symptoms.\n 3. State the prescribed actions from the psychologist, then stop\n Then, stop. Do not add any additional thoughts, explanations, or elaborations. Do not make up information. Do not go beyond the points listed above. \n  "
+            for sum in summaries:
+                text = text + sum
+            totalOutput = self.llm(text,  temperature=temp, top_k = top_k, top_p = top_p, repeat_penalty=repeat_penalty, max_tokens=512)#fix max tokens
+            print(totalOutput["choices"][0]["text"])
+        else:
+            text = "The text below is a transcript of a therapy session. 1. State the patient's primary concern in this session.\n 2. Summarize all of the patient's symptoms.\n 3. State the prescribed actions from the psychologist, then stop\n Then, stop. Do not add any additional thoughts, explanations, or elaborations. Do not make up information. Do not go beyond the points listed above.\n ```\n"
+            for reply in chunks[0].values():
                 text = text + reply["speaker"] + ": " + reply["text"] + "\n "
-            output = self.llm(text, temperature=temp, max_tokens=100) # set max tokens to an amount divisible by amount we want
-            print(output["choices"][0]["text"])
-            summaries.append(output["choices"][0]["text"])
-        text = "The following text is a collection of summaries from a therapy patient's counseling. Generate a long summary of the patient's experiences\n  "
-        for sum in summaries:
-            text = text + sum
-        print(text)
-        totalOutput = self.llm(text, temperature=temp, max_tokens=1024)
-        print(totalOutput)
+            text = text + "\n```"
+            totalOutput = self.llm(text,  temperature=temp, top_k = top_k, top_p = top_p, repeat_penalty=repeat_penalty, max_tokens=512)#fix max tokens
+            print(totalOutput["choices"][0]["text"])
             
-        return (totalOutput)
-
-
-##########################################################################Bullshit
-# with open('app/lm/testing/sample documents/example1.json', 'r') as f:
-#     transcript = json.load(f)
-
-# summary = Summary(path='models/Phi-3-mini-4k-instruct-q4.gguf')
-
-# sum = summary.SummarizeSingle(transcript=transcript)
-
-# print(sum)
-
+        return (totalOutput["choices"][0]["text"])
