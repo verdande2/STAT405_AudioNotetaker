@@ -2,6 +2,8 @@
 Main Window for TranscribeNotes Application
 """
 
+import os
+
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QStackedWidget, QFrame, QSizePolicy, QMessageBox, QApplication
@@ -439,6 +441,7 @@ class MainWindow(QMainWindow):
             'output_language': 'en', # English summary/transcript output by default
             'word_timestamps': False, # enable word-level timestamps (extra compute/time required)
             'speaker_diarization': True,
+            "translation": True,
             'model_path': 'models/Qwen3-4B-Q5_0.gguf', # model_path is specific for the summarizer: .gguf model file
             'summary_length': 'standard',
             'include_quotes': True,
@@ -502,3 +505,39 @@ class MainWindow(QMainWindow):
         """Keep the upload processor aligned with current summarizer settings."""
         model_path = self.settings.get('model_path') if isinstance(self.settings, dict) else None
         self.audio_processor.set_model_path(model_path)
+
+    def _load_env_vars(self) -> None:
+        """Load environment variables for settings."""
+        
+        self.settings = {
+            "default_language": os.getenv(
+                "INPUT_DEFAULT_LANGUAGE", None
+            ),  # input language, this and below both follow ISO 639-1 standard (2char lang code)
+            "output_language": os.getenv(
+                "OUTPUT_DEFAULT_LANGUAGE", "en"
+            ),  # English summary/transcript output by default
+            "word_timestamps": False,  # enable word-level timestamps (extra compute/time required)
+            "translation": True,
+            "speaker_diarization": True,  # id unique speakers if possible
+            "cached_model_dir": os.getenv(
+                "CACHED_MODEL_DIR", "./tmp"
+            ),
+            
+            "model_path": "models/Qwen3-4B-Q5_0.gguf",  # model_path is specific for the summarizer: .gguf model file
+            "summary_length": "standard",
+            "include_quotes": True,
+            "behavioral_themes": True,
+            "treatment_suggestions": False,
+            "storage_path": "/var/lib/transcribenotes/data",
+            "auto_backup": True,
+            "backup_retention": 30,
+            "processing_device": "auto",
+            "max_threads": 4,
+            "batch_processing": True,
+            "theme": "dark",
+            "session_timeout": 30,
+            "confirm_delete": True,
+            "show_notifications": True,
+            # TODO add additional transcription/translation/diarization/etc settings to default dict here
+        }
+        

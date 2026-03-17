@@ -8,7 +8,7 @@ from faster_whisper import WhisperModel
 import numpy as np
 from dataclasses import dataclass, field
 from app.src.WhisperXConfig.WhisperXConfig import WhisperXConfig, auto_configure_whisperx
-from app.src.ffmpeg_utils import get_ffmpeg_version
+from app.src.ffmpeg_utils import ffmpeg_utils
 from app.src.utils.utils import print_formatted_sys_path, ensure_ffmpeg_installed, format_timestamp
 from iso639 import Lang, iter_langs
 

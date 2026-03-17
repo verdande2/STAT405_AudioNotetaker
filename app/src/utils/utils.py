@@ -1,5 +1,5 @@
 import json, sys, logging 
-from app.src.ffmpeg_utils.get_ffmpeg_version import get_ffmpeg_version
+from app.src.ffmpeg_utils.ffmpeg_utils import get_ffmpeg_version
 from pathlib import Path
 
 DEBUG_MODE = True # global debug flag, naughty naughty
