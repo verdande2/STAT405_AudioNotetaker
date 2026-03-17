@@ -3,6 +3,7 @@ from typing import List, Dict, Optional, Union
 from pathlib import Path
 import json, logging, time, subprocess, re, sys, time, os, platform, psutil
 from datetime import datetime, timedelta
+import torch
 import whisperx
 from faster_whisper import WhisperModel
 import numpy as np
@@ -115,9 +116,10 @@ class AudioTranscriber():
         # TODO load additional environment vars and overwrite auto-config settings as needed
         
         self._transcript = {} # should already be defaulted to None, but let's make doubly sure.
-        
+        self._add_model_config_to_transcript()  # pre-populate whisperx_cfg key so _load_model() can write into it
+
         ffmpeg_version = ensure_ffmpeg_installed()
-        
+
         self._transcript["ffmpeg_version"] = ffmpeg_version
         
         # TODO ensure existence of required folders: cached_models_dir, etc
@@ -183,11 +185,14 @@ class AudioTranscriber():
         self._transcript["whisperx_cfg"]["language"] = os.environ.get("INPUT_DEFAULT_LANGUAGE", None)
         self._transcript["whisperx_cfg"]["download_root"] = os.environ.get("CACHED_MODEL_DIR", "./tmp")
         
+        _lang_env = os.environ.get("INPUT_DEFAULT_LANGUAGE", "") or ""
+        _input_language = _lang_env.strip() if _lang_env.strip().lower() not in ("", "none") else None
+
         model = whisperx.load_model(
             model_size,
             device=device,
             compute_type=compute_type,
-            language=os.environ.get("INPUT_DEFAULT_LANGUAGE", None), # None will resolve to auto-detecting in first 30s of audio
+            language=_input_language, # None will resolve to auto-detecting in first 30s of audio
             download_root=os.environ.get("CACHED_MODEL_DIR", "./tmp"), # default to a tmp dir in project root # TODO update this to data dir for project
         )
         
@@ -351,7 +356,7 @@ class AudioTranscriber():
         transcript["created_at"] = datetime.now()
         transcript["input_filepath"] = filepath
         transcript["input_language"] = self._detect_language(filepath)
-        transcript["output_language"] = self._transcript["language"]
+        transcript["output_language"] = transcript.get("language")
         
         transcript["metrics"] = self._run_metrics_on_transcript() 
         

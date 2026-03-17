@@ -5,6 +5,7 @@ Main application entry point
 """
 
 import sys
+from dotenv import load_dotenv
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QFontDatabase
@@ -14,6 +15,8 @@ from app.styles import load_stylesheet
 
 
 def main():
+    load_dotenv()
+
     # Enable high DPI scaling
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough

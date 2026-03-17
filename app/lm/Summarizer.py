@@ -55,8 +55,8 @@ class Summary:
         self.splitter = RecursiveJsonSplitter(max_chunk_size=2000, min_chunk_size=1000)
         self.llm = Llama(
             model_path=str(resolved_path),
-            n_batch= 2048,
-            n_context = 2048, #change max context size, default 2048
+            n_batch=2048,
+            n_context=8192,  # increased from 2048 — Qwen3 uses thinking tokens that eat context
         )
     
     def SummarizeSingle(self, transcript, temp: float = 0.5) -> str:
@@ -65,45 +65,63 @@ class Summary:
         chunk_summaries: list[str] = []
 
         for chunk in chunks:
-            # produce a short per-chunk summary focused on clinical content
-            prompt = (
-                "You are a clinical summarizer. For the following excerpt of a therapy "
-                "session, write a concise 2-3 sentence summary that focuses on the "
-                "patient's presenting problems, emotional state, and any coping "
-                "strategies mentioned. Be factual and neutral.\n\n"
+            excerpt = "\n".join(
+                f"{reply['speaker']}: {reply['text']}"
+                for reply in chunk.values()
             )
-            for reply in chunk.values():
-                prompt += f"{reply['speaker']}: {reply['text']}\n"
-
-            # instruct the model to produce a short neutral summary and
-            # to avoid any meta commentary or internal process text
-            prompt += "\nPlease provide only a concise 2-3 sentence summary. "
-            prompt += "Do not include meta-comments like 'let me condense' or numbered lists. "
-            prompt += "Return plain text only.\n\n"
-
-            out = self.llm(prompt, temperature=temp, max_tokens=150)
-            text_out = out.get("choices", [{}])[0].get("text", "").strip()
+            out = self.llm.create_chat_completion(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a clinical summarizer. Write concise, factual, neutral "
+                            "clinical summaries in plain prose. Return plain text only — no "
+                            "bullet points, no numbered lists, no meta-commentary. /no_think"
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            "Summarize the following therapy session excerpt in 2-3 sentences. "
+                            "Focus on the patient's presenting problems, emotional state, and "
+                            "any coping strategies mentioned.\n\n"
+                            + excerpt
+                        ),
+                    },
+                ],
+                temperature=temp,
+                max_tokens=512,
+            )
+            text_out = out["choices"][0]["message"]["content"].strip()
             if text_out:
                 chunk_summaries.append(text_out)
 
-        # final consolidation prompt: ask for a single coherent summary
-        final_prompt = (
-            "You are a clinical summarizer. Combine the following short summaries "
-            "into one coherent 5-8 sentence summary that highlights: the main "
-            "presenting problem, likely triggers, observed patterns/behaviors, "
-            "and practical next-step suggestions for the clinician. Keep it "
-            "clear and concise.\n\n"
+        combined = "\n".join(chunk_summaries)
+        final_out = self.llm.create_chat_completion(
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a clinical summarizer. Write concise, factual, neutral "
+                        "clinical summaries in plain prose. Return plain text only — no "
+                        "bullet points, no numbered lists, no meta-commentary. /no_think"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        "Combine the following session notes into one coherent 5-8 sentence "
+                        "clinical summary. Highlight: the main presenting problem, likely "
+                        "triggers, observed patterns or behaviors, and practical next-step "
+                        "suggestions for the clinician.\n\n"
+                        + combined
+                    ),
+                },
+            ],
+            temperature=temp,
+            max_tokens=1024,
         )
-        for s in chunk_summaries:
-            final_prompt += s + "\n"
-
-        # final instruction: 2-3 sentences, no commentary, plain text
-        final_prompt += "\nPlease return only a concise 2-3 sentence summary. "
-        final_prompt += "Do not include internal reasoning, notes to self, or numbered steps. "
-        final_prompt += "Return plain text only.\n\n"
-
-        final_out = self.llm(final_prompt, temperature=temp, max_tokens=400)
-        final_text = final_out.get("choices", [{}])[0].get("text", "").strip()
+        final_text = final_out["choices"][0]["message"]["content"].strip()
 
         # return plain text for easy logging/consumption by the UI
         return final_text
