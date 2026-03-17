@@ -4,14 +4,12 @@ User account management and administration
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-    QPushButton, QFrame, QScrollArea, QLineEdit,
-    QTableWidget, QTableWidgetItem, QHeaderView,
-    QAbstractItemView, QDialog,
-    QFormLayout, QCheckBox, QMessageBox
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QPushButton, QFrame,
+    QDialog,
+    QFormLayout, QCheckBox, QMessageBox, QLineEdit
 )
 from PySide6.QtCore import Qt, Signal
-from app.components.no_scroll_combo import NoScrollComboBox
 from app.db import (
     Account,
     AccountExistsError,
@@ -23,7 +21,6 @@ from app.db import (
     create_psychologist_account,
     delete_account,
     initialize_database,
-    list_accounts,
     update_account,
 )
 
@@ -455,7 +452,7 @@ class DeleteAccountDialog(QDialog):
 
 
 class AccountsPage(QWidget):
-    """Account management page for administrators."""
+    """Account page showing the current user's own account information."""
 
     authenticated_account_updated = Signal(object)
     authenticated_account_deleted = Signal()
@@ -463,144 +460,104 @@ class AccountsPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_account: Account | None = None
-        self._all_accounts: list[dict] = []
         self._setup_ui()
-    
+
     def _setup_ui(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        
+
         # Page header
         header = QWidget()
         header.setObjectName("pageHeader")
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(40, 32, 40, 32)
-        
+
         title_section = QVBoxLayout()
         title_section.setSpacing(4)
-        
-        title = QLabel("User Accounts")
+
+        title = QLabel("Account")
         title.setObjectName("pageTitle")
-        
-        description = QLabel("Manage system users and access permissions")
-        description.setObjectName("pageDescription")
-        
+
         title_section.addWidget(title)
-        title_section.addWidget(description)
         header_layout.addLayout(title_section)
-        
         header_layout.addStretch()
-        
-        # Create account button
-        create_btn = QPushButton("+ New Account")
-        create_btn.setObjectName("primaryButton")
-        create_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        create_btn.clicked.connect(self._show_create_dialog)
-        header_layout.addWidget(create_btn)
-        
+
         layout.addWidget(header)
-        
+
         # Content
         content = QWidget()
         content.setObjectName("pageContent")
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(40, 24, 40, 32)
         content_layout.setSpacing(20)
-        
-        # Filter bar
-        filter_layout = QHBoxLayout()
-        filter_layout.setSpacing(16)
-        
-        self.search_input = QLineEdit()
-        self.search_input.setObjectName("searchInput")
-        self.search_input.setPlaceholderText("Search by username or name...")
-        self.search_input.setMinimumWidth(300)
-        self.search_input.textChanged.connect(self._filter_accounts)
-        filter_layout.addWidget(self.search_input)
-        
-        filter_layout.addStretch()
-        
-        role_label = QLabel("Role:")
-        role_label.setObjectName("cardSubtitle")
-        filter_layout.addWidget(role_label)
-        
-        self.role_filter = NoScrollComboBox()
-        self.role_filter.addItem("All Roles")
-        self.role_filter.addItem("Psychologist")
-        self.role_filter.setMinimumWidth(130)
-        self.role_filter.currentIndexChanged.connect(
-            lambda *_: self._filter_accounts(self.search_input.text())
-        )
-        filter_layout.addWidget(self.role_filter)
-        
-        status_label = QLabel("Status:")
-        status_label.setObjectName("cardSubtitle")
-        filter_layout.addWidget(status_label)
-        
-        self.status_filter = NoScrollComboBox()
-        self.status_filter.addItem("All")
-        self.status_filter.addItem("Active")
-        self.status_filter.addItem("Inactive")
-        self.status_filter.setMinimumWidth(100)
-        self.status_filter.currentIndexChanged.connect(
-            lambda *_: self._filter_accounts(self.search_input.text())
-        )
-        filter_layout.addWidget(self.status_filter)
-        
-        content_layout.addLayout(filter_layout)
-        
-        # Accounts table
-        self.table = QTableWidget()
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels([
-            "Username", "Full Name", "Role", "Status", "Actions"
-        ])
-        
-        # Table styling
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
-        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
 
-        self.table.setColumnWidth(0, 130)
-        self.table.setColumnWidth(2, 120)
-        self.table.setColumnWidth(3, 90)
-        self.table.setColumnWidth(4, 200)
-        
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.table.setAlternatingRowColors(True)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setShowGrid(False)
-        
-        self._populate_table([])
-        
-        content_layout.addWidget(self.table)
-        
+        # Profile card
+        self.profile_card = QFrame()
+        self.profile_card.setObjectName("card")
+        profile_layout = QVBoxLayout(self.profile_card)
+        profile_layout.setContentsMargins(24, 20, 24, 20)
+        profile_layout.setSpacing(16)
+
+        # Fields
+        fields_layout = QFormLayout()
+        fields_layout.setSpacing(12)
+
+        self.lbl_username = QLabel("")
+        self.lbl_name = QLabel("")
+        self.lbl_role = QLabel("")
+        self.lbl_status = QLabel("")
+
+        fields_layout.addRow("Username:", self.lbl_username)
+        fields_layout.addRow("Full Name:", self.lbl_name)
+        fields_layout.addRow("Role:", self.lbl_role)
+        fields_layout.addRow("Status:", self.lbl_status)
+
+        profile_layout.addLayout(fields_layout)
+
+        # Action buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(8)
+        btn_layout.addStretch()
+
+        self.edit_btn = QPushButton("Edit")
+        self.edit_btn.setObjectName("tableButton")
+        self.edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.edit_btn.clicked.connect(self._show_edit_dialog)
+        btn_layout.addWidget(self.edit_btn)
+
+        self.delete_btn = QPushButton("Delete Account")
+        self.delete_btn.setObjectName("tableDangerButton")
+        self.delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.delete_btn.clicked.connect(self._show_delete_dialog)
+        btn_layout.addWidget(self.delete_btn)
+
+        profile_layout.addLayout(btn_layout)
+
+        content_layout.addWidget(self.profile_card)
+        content_layout.addStretch()
+
         # Info section
         info_frame = QFrame()
         info_frame.setObjectName("card")
         info_layout = QHBoxLayout(info_frame)
         info_layout.setContentsMargins(20, 16, 20, 16)
-        
+
         info_text = QLabel(
-            "You can edit your own account. Editing or deleting a different local "
-            "account requires the in-person admin authorization password. All "
-            "changes are logged for audit purposes."
+            "Changes to your account are logged for audit purposes."
         )
         info_text.setObjectName("cardSubtitle")
         info_text.setWordWrap(True)
         info_layout.addWidget(info_text)
-        
+
         content_layout.addWidget(info_frame)
-        
+
         layout.addWidget(content)
     
     def set_authenticated_account(self, account: Account | None):
         """Set the current signed-in account context used for guarded actions."""
         self.current_account = account
+        self._refresh_profile_display()
 
     def _role_display(self, role: str) -> str:
         if role == "admin":
@@ -620,143 +577,51 @@ class AccountsPage(QWidget):
         }
 
     def refresh_accounts(self):
-        """Load real local accounts from the encrypted database."""
+        """Refresh the current user's profile display."""
+        self._refresh_profile_display()
+
+    def _refresh_profile_display(self):
+        """Update the profile card labels from current_account."""
         if self.current_account is None:
-            self._all_accounts = []
-            self._populate_table([])
+            self.lbl_username.setText("")
+            self.lbl_name.setText("")
+            self.lbl_role.setText("")
+            self.lbl_status.setText("")
+            self.edit_btn.setEnabled(False)
+            self.delete_btn.setEnabled(False)
             return
 
-        try:
-            initialize_database()
-            accounts = list_accounts()
-        except (
-            MissingDatabaseKeyError,
-            InvalidDatabaseKeyError,
-            DatabaseInitializationError,
-        ) as exc:
-            self._all_accounts = []
-            self._populate_table([])
-            self._show_action_error("Failed to load accounts", str(exc))
-            return
-        except Exception as exc:
-            self._all_accounts = []
-            self._populate_table([])
-            self._show_action_error("Failed to load accounts", f"Unexpected error: {exc}")
-            return
-
-        self._all_accounts = [
-            self._account_to_dict(account)
-            for account in accounts
-            if account.role != "admin"
-        ]
-        self._apply_filters()
-
-    def _apply_filters(self):
-        """Populate the table with the currently filtered account list."""
-        search_text = self.search_input.text().strip().lower()
-        role_filter = self.role_filter.currentText()
-        status_filter = self.status_filter.currentText()
-
-        filtered_accounts = []
-        for account in self._all_accounts:
-            if search_text and (
-                search_text not in account["username"].lower()
-                and search_text not in account["name"].lower()
-            ):
-                continue
-            if role_filter == "Psychologist" and account["role"] != "psychologist":
-                continue
-            if status_filter == "Active" and not account["active"]:
-                continue
-            if status_filter == "Inactive" and account["active"]:
-                continue
-            filtered_accounts.append(account)
-
-        self._populate_table(filtered_accounts)
+        self.lbl_username.setText(self.current_account.username)
+        self.lbl_name.setText(self.current_account.display_name)
+        self.lbl_role.setText(self._role_display(self.current_account.role))
+        self.lbl_status.setText("Active" if self.current_account.is_active else "Inactive")
+        self.edit_btn.setEnabled(True)
+        self.delete_btn.setEnabled(True)
 
     def _show_action_error(self, title: str, message: str):
         QMessageBox.critical(self, title, message)
 
     def _show_action_info(self, title: str, message: str):
         QMessageBox.information(self, title, message)
-    
-    def _populate_table(self, accounts: list):
-        """Populate table with account data."""
-        self.table.setRowCount(len(accounts))
-        
-        for row, account in enumerate(accounts):
-            # Username
-            username_item = QTableWidgetItem(account['username'])
-            self.table.setItem(row, 0, username_item)
-            
-            # Name
-            name_item = QTableWidgetItem(account['name'])
-            self.table.setItem(row, 1, name_item)
-            
-            # Role
-            role_item = QTableWidgetItem(account['role_display'])
-            role_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.table.setItem(row, 2, role_item)
-            
-            # Status
-            status = "Active" if account['active'] else "Inactive"
-            status_item = QTableWidgetItem(status)
-            status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.table.setItem(row, 3, status_item)
-            
-            # Actions
-            actions_widget = QWidget()
-            actions_layout = QHBoxLayout(actions_widget)
-            actions_layout.setContentsMargins(4, 4, 4, 4)
-            actions_layout.setSpacing(4)
-            
-            edit_btn = QPushButton("Edit")
-            edit_btn.setObjectName("tableButton")
-            edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            edit_btn.clicked.connect(
-                lambda checked, a=account: self._show_edit_dialog(a)
-            )
-            actions_layout.addWidget(edit_btn)
 
-            delete_btn = QPushButton("Delete")
-            delete_btn.setObjectName("tableDangerButton")
-            delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            delete_btn.clicked.connect(
-                lambda checked, a=account: self._show_delete_dialog(a)
-            )
-            actions_layout.addWidget(delete_btn)
-
-            self.table.setCellWidget(row, 4, actions_widget)
-            self.table.setRowHeight(row, 56)
-
-    def _show_create_dialog(self):
-        """Show create account dialog."""
-        dialog = CreateAccountDialog(self)
-        dialog.account_created.connect(self._on_account_created)
-        dialog.exec()
-
-    def _show_edit_dialog(self, account: dict):
-        """Show edit account dialog."""
-        is_self = bool(self.current_account and self.current_account.id == account.get("id"))
-        dialog = EditAccountDialog(account, is_self=is_self, parent=self)
+    def _show_edit_dialog(self):
+        """Show edit dialog for the current user's account."""
+        if self.current_account is None:
+            return
+        account = self._account_to_dict(self.current_account)
+        dialog = EditAccountDialog(account, is_self=True, parent=self)
         dialog.account_updated.connect(self._on_account_updated)
         dialog.exec()
 
-    def _show_delete_dialog(self, account: dict):
-        """Show delete-account confirmation/credential dialog."""
-        is_self = bool(self.current_account and self.current_account.id == account.get("id"))
-        dialog = DeleteAccountDialog(account, is_self=is_self, parent=self)
+    def _show_delete_dialog(self):
+        """Show delete dialog for the current user's account."""
+        if self.current_account is None:
+            return
+        account = self._account_to_dict(self.current_account)
+        dialog = DeleteAccountDialog(account, is_self=True, parent=self)
         dialog.delete_confirmed.connect(self._on_account_deleted)
         dialog.exec()
 
-    def _on_account_created(self, data: dict):
-        """Handle new account creation."""
-        self.refresh_accounts()
-        self._show_action_info(
-            "Account Created",
-            f"Account '{data['username']}' was created successfully.",
-        )
-    
     def _on_account_updated(self, data: dict):
         """Handle account update."""
         if self.current_account is None:
@@ -792,7 +657,7 @@ class AccountsPage(QWidget):
             self.current_account = updated
             self.authenticated_account_updated.emit(updated)
 
-        self.refresh_accounts()
+        self._refresh_profile_display()
         self._show_action_info(
             "Account Updated",
             f"Account '{updated.username}' was updated successfully.",
@@ -830,8 +695,6 @@ class AccountsPage(QWidget):
             self._show_action_error("Delete Account", f"Unexpected error: {exc}")
             return
 
-        self.refresh_accounts()
-
         if is_self_delete:
             self._show_action_info(
                 "Account Deleted",
@@ -844,16 +707,3 @@ class AccountsPage(QWidget):
             "Account Deleted",
             f"Account '{deleted.username}' was permanently deleted.",
         )
-    
-    def _filter_accounts(self, text: str):
-        """Filter table by search text."""
-        self._apply_filters()
-    
-    def load_accounts(self, accounts: list):
-        """Load accounts from backend.
-        
-        Args:
-            accounts: List of account dicts from API
-        """
-        self._all_accounts = list(accounts)
-        self._apply_filters()

@@ -159,11 +159,7 @@ class TranscriptsPage(QWidget):
         title = QLabel("Transcripts")
         title.setObjectName("pageTitle")
         
-        description = QLabel("Search, filter, and review all session transcripts")
-        description.setObjectName("pageDescription")
-        
         header_layout.addWidget(title)
-        header_layout.addWidget(description)
         layout.addWidget(header)
         
         # Content

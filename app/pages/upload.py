@@ -209,11 +209,7 @@ class UploadPage(QWidget):
         title = QLabel("Upload Audio")
         title.setObjectName("pageTitle")
         
-        description = QLabel("Import MP4 recordings for transcription and summarization")
-        description.setObjectName("pageDescription")
-        
         header_layout.addWidget(title)
-        header_layout.addWidget(description)
         layout.addWidget(header)
         
         # Scrollable content

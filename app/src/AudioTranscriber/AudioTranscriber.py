@@ -4,8 +4,6 @@ from pathlib import Path
 import json, logging, time, subprocess, re, sys, time, os, platform, psutil
 from datetime import datetime, timedelta
 import torch
-import whisperx
-from faster_whisper import WhisperModel
 import numpy as np
 from dataclasses import dataclass, field
 from app.src.WhisperXConfig.WhisperXConfig import WhisperXConfig, auto_configure_whisperx
@@ -149,7 +147,7 @@ class AudioTranscriber():
         model_size: str | None = None,
         device: str | None = None,
         compute_type: str | None = None
-        ) -> WhisperModel:
+        ):
         """
         Load the requested WhisperX ASR model.
         
@@ -165,6 +163,8 @@ class AudioTranscriber():
         
         """
         
+        import whisperx  # deferred: slow to import due to ctranslate2 -> transformers scan
+
         logging.info(
             f"Loading Whisper model '{model_size}' on {device} ({compute_type=})... Current datetime: {datetime.now()}"
         )
@@ -376,6 +376,7 @@ class AudioTranscriber():
         lang = transcript.get("language", None)  # defaults to None for auto-detect in first 30s of audio
 
         try:
+            import whisperx
             alignment_model, alignment_metadata = whisperx.load_align_model(
                 language_code=lang if lang else os.environ.get("INPUT_DEFAULT_LANGUAGE", None), # None will resolve to auto-detecting in first 30s of audio
                 device=self._whisperx_cfg.device,
@@ -435,6 +436,7 @@ class AudioTranscriber():
 
             diarized_segments = diarize_model(audio_input) # TODO consider preload, min_speakers/max_speakers?
 
+            import whisperx
             transcript = whisperx.assign_word_speakers(diarized_segments, transcript)
 
         except Exception as e:
