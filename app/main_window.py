@@ -211,6 +211,9 @@ class MainWindow(QMainWindow):
         # Patient detail - back to list
         self.patient_detail_page.back_requested.connect(self._on_back_to_patients)
 
+        # Patient detail - upload session for this patient
+        self.patient_detail_page.upload_session_requested.connect(self._on_upload_session_for_patient)
+
         # Accounts page - keep signed-in session in sync with edits/deletes
         self.accounts_page.authenticated_account_updated.connect(
             self._on_authenticated_account_updated
@@ -281,6 +284,14 @@ class MainWindow(QMainWindow):
         """Return to patients list."""
         self.pages.setCurrentIndex(2)  # Patients page
         self.sidebar.set_active_page(1)  # Update sidebar selection
+
+    def _on_upload_session_for_patient(self, patient_id: int):
+        """Navigate to upload page with the given patient pre-selected."""
+        self.upload_page.refresh_patients()
+        if patient_id:
+            self.upload_page.select_patient(patient_id)
+        self.sidebar.set_active_page(0)
+        self.pages.setCurrentIndex(1)  # Upload page
 
     def _on_authenticated_account_updated(self, account):
         """Update current session after editing the signed-in account."""

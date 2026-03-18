@@ -7,6 +7,7 @@ audio file -> transcription -> summarization -> DB persistence
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -132,6 +133,7 @@ class AudioSessionProcessor:
             return self._fallback_summary(summarizer_input_text)
 
         summary_text = self._extract_summary_text(raw_output)
+        summary_text = re.sub(r"<think>.*?</think>", "", summary_text, flags=re.DOTALL).strip()
         return summary_text or self._fallback_summary(summarizer_input_text)
 
     @staticmethod
