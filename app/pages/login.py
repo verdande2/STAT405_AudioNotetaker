@@ -77,17 +77,11 @@ class LoginPage(QWidget):
         header_layout = QVBoxLayout()
         header_layout.setSpacing(8)
 
-        title = QLabel("TranscribeNotes")
-        title.setObjectName("pageTitle")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title_label = QLabel("TranscribeNotes")
+        self.title_label.setObjectName("pageTitle")
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.subtitle_label = QLabel("")
-        self.subtitle_label.setObjectName("cardSubtitle")
-        self.subtitle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.subtitle_label.setWordWrap(True)
-
-        header_layout.addWidget(title)
-        header_layout.addWidget(self.subtitle_label)
+        header_layout.addWidget(self.title_label)
         card_layout.addLayout(header_layout)
 
         card_layout.addSpacing(8)
@@ -104,12 +98,6 @@ class LoginPage(QWidget):
         self.form_stack.addWidget(self.signup_form)
         self.form_stack.currentChanged.connect(self._refresh_form_stack_height)
         card_layout.addWidget(self.form_stack)
-
-        self.mode_note_label = QLabel("")
-        self.mode_note_label.setObjectName("cardSubtitle")
-        self.mode_note_label.setWordWrap(True)
-        self.mode_note_label.setVisible(False)
-        card_layout.addWidget(self.mode_note_label)
 
         self.error_label = QLabel("")
         self.error_label.setObjectName("errorLabel")
@@ -137,12 +125,6 @@ class LoginPage(QWidget):
         self.secondary_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.secondary_btn.clicked.connect(self._toggle_mode)
         card_layout.addWidget(self.secondary_btn)
-
-        footer = QLabel("Secure local authentication - No internet required")
-        footer.setObjectName("cardSubtitle")
-        footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        footer.setStyleSheet("font-size: 11px; margin-top: 8px;")
-        card_layout.addWidget(footer)
 
         content_layout.addWidget(card)
 
@@ -243,20 +225,12 @@ class LoginPage(QWidget):
         self._clear_messages()
 
         if is_signup:
-            self.subtitle_label.setText(
-                "Create a local psychologist account (admin authorization required)"
-            )
-            self.mode_note_label.setText(
-                "A physical administrator must enter the local authorization "
-                "password to create a psychologist account on this device."
-            )
-            self.mode_note_label.setVisible(True)
+            self.title_label.setVisible(False)
             self.primary_btn.setText("Create Account")
             self.secondary_btn.setText("Back to Sign In")
             self.signup_name_input.setFocus()
         else:
-            self.subtitle_label.setText("Clinical Documentation System")
-            self.mode_note_label.setVisible(False)
+            self.title_label.setVisible(True)
             self.primary_btn.setText("Sign In")
             self.secondary_btn.setText("Create Psychologist Account")
             self.login_username_input.setFocus()
@@ -272,10 +246,7 @@ class LoginPage(QWidget):
         current.adjustSize()
         current.layout().activate()
         target_height = current.sizeHint().height()
-        if self.form_stack.currentIndex() == 1:
-            # Sign-up form has more controls and should never collapse labels.
-            target_height = max(target_height, 620)
-        else:
+        if self.form_stack.currentIndex() != 1:
             target_height = max(target_height, 170)
         self.form_stack.setFixedHeight(target_height)
         self.form_stack.updateGeometry()

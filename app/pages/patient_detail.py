@@ -53,21 +53,7 @@ class SessionItem(QFrame):
         header.addWidget(date_label)
         
         header.addStretch()
-        
-        duration_label = QLabel(data.get('duration', ''))
-        duration_label.setObjectName("cardSubtitle")
-        header.addWidget(duration_label)
-        
-        status = data.get('status', 'Complete')
-        status_map = {
-            "Complete": "statusComplete",
-            "Processing": "statusProcessing",
-            "Pending": "statusPending",
-        }
-        status_label = QLabel(status)
-        status_label.setObjectName(status_map.get(status, "statusPending"))
-        header.addWidget(status_label)
-        
+
         layout.addLayout(header)
         
         # Summary preview
@@ -88,7 +74,8 @@ class PatientDetailPage(QWidget):
     """Detailed patient view with session history and notes."""
     
     back_requested = Signal()
-    
+    upload_session_requested = Signal(int)  # patient_id
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_patient_id = None
@@ -119,31 +106,19 @@ class PatientDetailPage(QWidget):
         back_btn.clicked.connect(self.back_requested.emit)
         title_section.addWidget(back_btn)
         
-        title_info = QVBoxLayout()
-        title_info.setSpacing(2)
-        
         self.patient_name = QLabel("Patient Name")
         self.patient_name.setObjectName("pageTitle")
-        
-        self.patient_mrn = QLabel("Local patient profile")
-        self.patient_mrn.setObjectName("pageDescription")
-        
-        title_info.addWidget(self.patient_name)
-        title_info.addWidget(self.patient_mrn)
-        title_section.addLayout(title_info)
-        
+        title_section.addWidget(self.patient_name)
+
         header_layout.addLayout(title_section)
         header_layout.addStretch()
-        
-        # Action buttons
-        edit_btn = QPushButton("Edit Profile")
-        edit_btn.setObjectName("secondaryButton")
-        edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        header_layout.addWidget(edit_btn)
-        
+
         upload_btn = QPushButton("+ Upload Session")
         upload_btn.setObjectName("primaryButton")
         upload_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        upload_btn.clicked.connect(
+            lambda: self.upload_session_requested.emit(self.current_patient_id or 0)
+        )
         header_layout.addWidget(upload_btn)
         
         layout.addWidget(header)
@@ -268,7 +243,6 @@ class PatientDetailPage(QWidget):
         if account is None:
             self.current_patient_id = None
             self.patient_name.setText("Patient Name")
-            self.patient_mrn.setText("Local patient profile")
             self._clear_session_items()
             self._reset_detail_panels()
             self.session_count.setText("0 sessions")
@@ -310,8 +284,6 @@ class PatientDetailPage(QWidget):
         return {
             "id": session.id,
             "date": self._format_session_date(session.created_at, long_format=True),
-            "duration": "Duration TBD",
-            "status": "Status TBD",
             "summary_preview": summary_preview,
         }
 
@@ -336,7 +308,6 @@ class PatientDetailPage(QWidget):
         self.patient_name.setText(
             self._format_patient_name(patient.first_name, patient.last_name)
         )
-        self.patient_mrn.setText("Local patient profile")
         self._current_patient_notes = (patient.notes or "").strip()
         self.notes_text.setPlainText(
             "Clinical session notes are not stored in the local database yet.\n\n"
@@ -352,7 +323,6 @@ class PatientDetailPage(QWidget):
 
     def _show_load_error(self, message: str):
         self.patient_name.setText("Patient")
-        self.patient_mrn.setText("Unable to load patient details")
         self._current_patient_notes = ""
         self._clear_session_items()
         self._reset_detail_panels()

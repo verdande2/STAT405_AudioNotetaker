@@ -152,11 +152,7 @@ class PatientsPage(QWidget):
         title = QLabel("Patients")
         title.setObjectName("pageTitle")
 
-        description = QLabel("Manage patient profiles and view session history")
-        description.setObjectName("pageDescription")
-
         title_section.addWidget(title)
-        title_section.addWidget(description)
         header_layout.addLayout(title_section)
 
         header_layout.addStretch()

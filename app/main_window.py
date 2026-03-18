@@ -11,13 +11,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
 
-from app.pages.dashboard import DashboardPage
 from app.pages.upload import UploadPage
 from app.pages.patients import PatientsPage
 from app.pages.patient_detail import PatientDetailPage
 from app.pages.transcripts import TranscriptsPage
 from app.pages.accounts import AccountsPage
-from app.pages.settings import SettingsPage
 from app.pages.login import LoginPage
 
 
@@ -59,30 +57,12 @@ class Sidebar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
-        # Header
-        header = QWidget()
-        header.setObjectName("sidebarHeader")
-        header_layout = QVBoxLayout(header)
-        header_layout.setContentsMargins(20, 24, 20, 20)
-        
-        title = QLabel("TranscribeNotes")
-        title.setObjectName("appTitle")
-        
-        subtitle = QLabel("Clinical Documentation")
-        subtitle.setObjectName("appSubtitle")
-        
-        header_layout.addWidget(title)
-        header_layout.addWidget(subtitle)
-        layout.addWidget(header)
-        
         # Navigation buttons
         nav_items = [
-            ("Dashboard", 0),
-            ("Upload Audio", 1),
-            ("Patients", 2),
-            ("Transcripts", 3),
-            ("Accounts", 4),
-            ("Settings", 5),
+            ("Upload Audio", 0),
+            ("Patients", 1),
+            ("Transcripts", 2),
+            ("Account", 3),
         ]
         
         nav_container = QWidget()
@@ -203,23 +183,19 @@ class MainWindow(QMainWindow):
         
         # Create pages
         self.login_page = LoginPage()
-        self.dashboard_page = DashboardPage()
         self.upload_page = UploadPage()
         self.patients_page = PatientsPage()
         self.patient_detail_page = PatientDetailPage()
         self.transcripts_page = TranscriptsPage()
         self.accounts_page = AccountsPage()
-        self.settings_page = SettingsPage()
-        
+
         # Add pages to stack
-        self.pages.addWidget(self.login_page)      # 0
-        self.pages.addWidget(self.dashboard_page)  # 1
-        self.pages.addWidget(self.upload_page)     # 2
-        self.pages.addWidget(self.patients_page)   # 3
-        self.pages.addWidget(self.transcripts_page) # 4
-        self.pages.addWidget(self.accounts_page)   # 5
-        self.pages.addWidget(self.settings_page)   # 6
-        self.pages.addWidget(self.patient_detail_page) # 7
+        self.pages.addWidget(self.login_page)           # 0
+        self.pages.addWidget(self.upload_page)          # 1
+        self.pages.addWidget(self.patients_page)        # 2
+        self.pages.addWidget(self.transcripts_page)     # 3
+        self.pages.addWidget(self.accounts_page)        # 4
+        self.pages.addWidget(self.patient_detail_page)  # 5
     
     def _connect_signals(self):
         # Sidebar navigation
@@ -235,6 +211,9 @@ class MainWindow(QMainWindow):
         # Patient detail - back to list
         self.patient_detail_page.back_requested.connect(self._on_back_to_patients)
 
+        # Patient detail - upload session for this patient
+        self.patient_detail_page.upload_session_requested.connect(self._on_upload_session_for_patient)
+
         # Accounts page - keep signed-in session in sync with edits/deletes
         self.accounts_page.authenticated_account_updated.connect(
             self._on_authenticated_account_updated
@@ -247,26 +226,21 @@ class MainWindow(QMainWindow):
         self.upload_page.patient_selection_requested.connect(
             # TODO handle event here, when user selects "new patient" from the upload page
             # do stuff
-            
-            lambda: self._on_navigation_changed(2)  # Go to patients page
+
+            lambda: self._on_navigation_changed(1)  # Go to patients page
         )
         self.upload_page.upload_started.connect(self._on_upload_started)
 
-        # Settings page - when the user saves settings, update our state
-        self.settings_page.settings_changed.connect(self._on_settings_changed)
-    
     def _on_navigation_changed(self, index: int):
         """Handle sidebar navigation changes."""
         # Map sidebar index to page index (offset by 1 for login page)
         if index == 0:
-            self.dashboard_page.refresh_from_database()
-        if index == 1:
             self.upload_page.refresh_patients()
-        if index == 2:
+        if index == 1:
             self.patients_page.refresh_patients()
-        if index == 3:
+        if index == 2:
             self.transcripts_page.refresh_transcripts()
-        if index == 4:
+        if index == 3:
             self.accounts_page.refresh_accounts()
         self.pages.setCurrentIndex(index + 1)
     
@@ -274,21 +248,20 @@ class MainWindow(QMainWindow):
         """Handle successful login."""
         self.current_account = self.login_page.current_account
         self.sidebar.set_user(username, role)
-        self.dashboard_page.set_authenticated_account(self.current_account)
         self.upload_page.set_authenticated_account(self.current_account)
         self.patients_page.set_authenticated_account(self.current_account)
         self.patient_detail_page.set_authenticated_account(self.current_account)
         self.transcripts_page.set_authenticated_account(self.current_account)
         self.accounts_page.set_authenticated_account(self.current_account)
         self.sidebar.setVisible(True)
-        self.dashboard_page.refresh_from_database()
-        self.pages.setCurrentIndex(1)  # Dashboard
+        self.patients_page.refresh_patients()
+        self.sidebar.set_active_page(1)
+        self.pages.setCurrentIndex(2)  # Patients
     
     def _on_logout(self):
         """Handle logout request."""
         self.current_account = None
         self.login_page.current_account = None
-        self.dashboard_page.set_authenticated_account(None)
         self.upload_page.set_authenticated_account(None)
         self.patients_page.set_authenticated_account(None)
         self.patient_detail_page.set_authenticated_account(None)
@@ -305,12 +278,20 @@ class MainWindow(QMainWindow):
         """Handle request to view patient details."""
         self.patient_detail_page.set_authenticated_account(self.current_account)
         self.patient_detail_page.load_patient(patient_id)
-        self.pages.setCurrentIndex(7)  # Patient detail page
+        self.pages.setCurrentIndex(5)  # Patient detail page
     
     def _on_back_to_patients(self):
         """Return to patients list."""
-        self.pages.setCurrentIndex(3)  # Patients page
-        self.sidebar.set_active_page(2)  # Update sidebar selection
+        self.pages.setCurrentIndex(2)  # Patients page
+        self.sidebar.set_active_page(1)  # Update sidebar selection
+
+    def _on_upload_session_for_patient(self, patient_id: int):
+        """Navigate to upload page with the given patient pre-selected."""
+        self.upload_page.refresh_patients()
+        if patient_id:
+            self.upload_page.select_patient(patient_id)
+        self.sidebar.set_active_page(0)
+        self.pages.setCurrentIndex(1)  # Upload page
 
     def _on_authenticated_account_updated(self, account):
         """Update current session after editing the signed-in account."""
@@ -318,7 +299,6 @@ class MainWindow(QMainWindow):
         self.login_page.current_account = account
         role = "Administrator" if getattr(account, "role", "") == "admin" else "Psychologist"
         self.sidebar.set_user(account.display_name, role)
-        self.dashboard_page.set_authenticated_account(account)
         self.upload_page.set_authenticated_account(account)
         self.patients_page.set_authenticated_account(account)
         self.patient_detail_page.set_authenticated_account(account)
@@ -416,7 +396,6 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()
 
     def _refresh_after_upload_processing(self, *, patient_id: int | None = None):
-        self.dashboard_page.refresh_from_database()
         self.patients_page.refresh_patients()
         self.transcripts_page.refresh_transcripts()
         self.upload_page.refresh_patients()

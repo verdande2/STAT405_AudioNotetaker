@@ -30,6 +30,7 @@ def print_formatted_sys_path():
         print_formatted_sys_path()
 
 def ensure_ffmpeg_installed():
+    ffmpeg_version = None  # default; assigned on successful get_ffmpeg_version() call
     try:
         ffmpeg_version = get_ffmpeg_version()
 
@@ -40,9 +41,9 @@ def ensure_ffmpeg_installed():
 
         # ffmpeg not found in path => add local ffmpeg path (in project root) to path
         logging.info(f"Attempting to add local ffmpeg path to sys.PATH...")
-        parent_dir = Path.cwd().resolve().parent  # parent = project root, currently running from test_notebooks dir, one folder down from project root, will need update when merged to main # TODO update this when merged to main
+        project_root = Path(__file__).resolve().parents[3]  # app/src/utils/utils.py -> project root
         ffmpeg_bin_path = (
-            parent_dir / "ffmpeg" / "bin"
+            project_root / "ffmpeg" / "bin"
         )  # will look for local ffmpeg here, as well as the rest of sys.PATH
 
         if ffmpeg_bin_path.exists():

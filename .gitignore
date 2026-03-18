@@ -223,3 +223,4 @@ data/*.db-*
 # do not commit ffmpeg binaries, DLLs are over 100MB!
 ffmpeg/
 model_cache/
+models_cache/

@@ -209,11 +209,7 @@ class UploadPage(QWidget):
         title = QLabel("Upload Audio")
         title.setObjectName("pageTitle")
         
-        description = QLabel("Import MP4 recordings for transcription and summarization")
-        description.setObjectName("pageDescription")
-        
         header_layout.addWidget(title)
-        header_layout.addWidget(description)
         layout.addWidget(header)
         
         # Scrollable content
@@ -677,6 +673,12 @@ class UploadPage(QWidget):
         self.patient_combo.blockSignals(False)
         self._update_queue_ui()
     
+    def select_patient(self, patient_id: int):
+        """Pre-select a patient in the combo box by their ID."""
+        index = self.patient_combo.findData(patient_id)
+        if index >= 0:
+            self.patient_combo.setCurrentIndex(index)
+
     def load_patients(self, patients: list):
         """Populate patient dropdown from backend.
         

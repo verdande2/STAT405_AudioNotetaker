@@ -3,6 +3,7 @@ Transcripts Page for TranscribeNotes Application
 Search, filter, and manage all transcripts
 """
 
+import re
 from datetime import datetime
 
 from PySide6.QtWidgets import (
@@ -23,6 +24,11 @@ from app.db import (
     list_client_profiles,
     list_session_records,
 )
+
+
+def _strip_think_tags(text: str) -> str:
+    """Remove <think>...</think> blocks that some LLMs emit as chain-of-thought."""
+    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
 
 class TranscriptDetailDialog(QDialog):
@@ -91,7 +97,7 @@ class TranscriptDetailDialog(QDialog):
         summary_layout.addWidget(summary_title)
 
         summary_text = QPlainTextEdit()
-        summary_text.setPlainText(data.get('summary', 'No summary available'))
+        summary_text.setPlainText(_strip_think_tags(data.get('summary', 'No summary available')))
         summary_text.setReadOnly(True)
         # Size to fit content rather than using a fixed max height
         doc = summary_text.document()
@@ -159,11 +165,7 @@ class TranscriptsPage(QWidget):
         title = QLabel("Transcripts")
         title.setObjectName("pageTitle")
         
-        description = QLabel("Search, filter, and review all session transcripts")
-        description.setObjectName("pageDescription")
-        
         header_layout.addWidget(title)
-        header_layout.addWidget(description)
         layout.addWidget(header)
         
         # Content

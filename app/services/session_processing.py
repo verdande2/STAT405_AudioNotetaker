@@ -6,17 +6,13 @@ audio file -> transcription -> summarization -> DB persistence
 
 from __future__ import annotations
 
+import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
 from app.db import create_session_record
-from app.services.placeholder_transcript import (
-    load_placeholder_transcript_json,
-    load_placeholder_transcript_text,
-)
-
-# TODO use these below!
 from app.src.AudioTranscriber.AudioTranscriber import AudioTranscriber
 from app.src.TranscriptTranslator.TranscriptTranslator import TranscriptTranslator
 
@@ -101,30 +97,31 @@ class AudioSessionProcessor:
         )
 
     def transcribe_audio(self, source_audio_path: str) -> TranscriptStageOutput:
-        """Temporary speech-to-text placeholder.
+        """Run WhisperX speech-to-text on the given audio file."""
+        hf_token = os.environ.get("HF_TOKEN", "")
 
-        Replace this implementation with actual STT while preserving the return
-        shape so the summarization and persistence stages do not need rewiring.
-        """
-        transcript_json = load_placeholder_transcript_json()
-        transcript_text = load_placeholder_transcript_text()
+        transcriber = AudioTranscriber(filepath=source_audio_path)
+        transcriber.set_hf_token(hf_token)
+
+        transcript_dict, _ = transcriber.transcribe(
+            filepath=source_audio_path,
+            align=False,
+            diarize=bool(hf_token),
+        )
+
+        transcript_text = transcriber._build_transcript_text(transcript_dict)
+        detected_language = transcript_dict.get("language")
 
         return TranscriptStageOutput(
-            transcript_json=transcript_json,
+            transcript_json=transcript_dict,
             transcript_text=transcript_text,
-            detected_language="en_US",
+            detected_language=detected_language,
         )
 
     def summarize_transcript(self, *, transcript_json: dict, transcript_text: str) -> str:
         """Generate a summary using the local LLM summarizer when available."""
-        # Temporary behavior: force a shared placeholder transcript into every
-        # summarizer call until the real transcription stage is integrated.
-        try:
-            summarizer_input_json = load_placeholder_transcript_json()
-            summarizer_input_text = load_placeholder_transcript_text()
-        except Exception:
-            summarizer_input_json = transcript_json
-            summarizer_input_text = transcript_text
+        summarizer_input_json = self._whisperx_to_summarizer_format(transcript_json)
+        summarizer_input_text = transcript_text
 
         summarizer = self._get_summarizer()
         if summarizer is None:
@@ -136,7 +133,22 @@ class AudioSessionProcessor:
             return self._fallback_summary(summarizer_input_text)
 
         summary_text = self._extract_summary_text(raw_output)
+        summary_text = re.sub(r"<think>.*?</think>", "", summary_text, flags=re.DOTALL).strip()
         return summary_text or self._fallback_summary(summarizer_input_text)
+
+    @staticmethod
+    def _whisperx_to_summarizer_format(transcript_dict: dict) -> dict:
+        """Convert WhisperX segment list to the {index: {speaker, text}} format the summarizer expects."""
+        result = {}
+        for idx, seg in enumerate(transcript_dict.get("segments", [])):
+            text = seg.get("text", "").strip()
+            if not text:
+                continue
+            result[str(idx)] = {
+                "speaker": seg.get("speaker", "SPEAKER_00"),
+                "text": text,
+            }
+        return result
 
     def _get_summarizer(self):
         if self._summarizer is not None:
