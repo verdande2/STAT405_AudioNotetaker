@@ -1,58 +1,134 @@
-# AudioNotetaker Project
+# AudioNotetaker
 
+A transcription and audio note-taking application with local LLM summarization.
 
-## Installation Quickstart
-Initial/first run of app requires network access!
+> **Note:** The initial/first run of the app requires network access.
 
+---
 
+## Prerequisites
 
+- [Git](https://git-scm.com/) with credential manager or browser login for auth
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
+- [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z) — use the `--full-shared` build (verify with `ffmpeg -version`)
+- A [Hugging Face](https://huggingface.co/) account with an access token
+- Python 3.12+
 
-1. Start in empty directory. Ex. new folder `projects` in your home dir:
+---
 
-`cd ~ && mkdir projects && cd projects`
+## Installation
 
-2. Use Git credential manager/browser login/whatever needed to auth and shallow clone the whole repository to `~/projects`:
+### 1. Clone the Repository
 
-`cd ~/projects && git clone --depth=1 https://github.com/verdande2/STAT405_AudioNotetaker.git`
+Start in an empty directory, for example a `projects` folder in your home directory:
 
-1. In a text editor or IDE, open/create as needed the `.env` file in the project root. The `.env.example` file has the template for the variables. The main one that is "secret" and not committed to the repo is the `HF_TOKEN`, which is used to download the HF gated models on first run. The `.env` vars relevant to the transcription/translation/diarization/alignment are:
-
+```bash
+cd ~ && mkdir projects && cd projects
+git clone --depth=1 https://github.com/verdande2/STAT405_AudioNotetaker.git
+cd STAT405_AudioNotetaker
 ```
-HF_TOKEN=INSERT_HUGGING_FACE_TOKEN_HERE # the only really important one that needs to be set, 
 
-HF_HUB_DISABLE_SYMLINKS_WARNING = true # disable symlink feature of HF_HUB (not needed for this project)
+---
 
-INPUT_DEFAULT_LANGUAGE=None # leave as None to auto-detect, otherwise =  2-char ISO 639-1 language code, ie. "en", etc
+### 2. Configure Environment Variables
 
-CACHED_MODEL_DIR=models_cache/ # cache dir for models from whisperx and the like, set to anywhere you have read/write/execute permissions
+In a text editor or IDE, open (or create) a `.env` file in the project root. Use `.env.example` as a template. The key variables are:
 
-HF_DATASETS_CACHE = hf_datasets_cache/ # datasets cache dir for TESTING data only, ignore
+```env
+HF_TOKEN=INSERT_HUGGING_FACE_TOKEN_HERE       # Required — your Hugging Face access token
+HF_HUB_DISABLE_SYMLINKS_WARNING=true          # Disables symlink warnings from HF Hub
+INPUT_DEFAULT_LANGUAGE=None                   # None = auto-detect; or use ISO 639-1 code e.g. "en"
+CACHED_MODEL_DIR=models_cache/                # Cache dir for whisperx and related models
+HF_DATASETS_CACHE=hf_datasets_cache/         # For testing data only — can be ignored
 ```
 
-1. Open browser, open: [HF Access Tokens](https://huggingface.co/settings/tokens) -> Click  `+ Create new token` button to the right -> set `Token name` to whatever, not important -> defaults should all be fine for general fine-grained token settings -> click `Create Token` button at the bottom -> click `Copy` button to the right of the token name -> set `HF_TOKEN=` the copied HF Access Token oin your local project_root's `.env` file.
+To generate your `HF_TOKEN`:
 
+1. Go to [HF Access Tokens](https://huggingface.co/settings/tokens)
+2. Click **+ Create new token**
+3. Give it any name — default settings are fine
+4. Click **Create Token**, then **Copy**
+5. Paste the token as the value for `HF_TOKEN=` in your `.env` file
 
+---
 
+### 3. Download the Summarizer Model
 
-1. While the repo clones, in git bash or similar, while in the project root, run:
-`uv sync`
+1. Download the model file from [Google Drive](https://drive.google.com/file/d/1Qj5Q-HucBemO2ZG_jBj1t9sp-wVT-vCn/view)
+2. In the project root, create a `/models/` directory:
+   ```bash
+   mkdir models
+   ```
+   > This folder is excluded by `.gitignore` — you must create it manually each time you clone.
+3. Place the downloaded model file inside `/models/`
 
-1. Quick and dirty bootstrapping:
-`uv run python scripts/create_psychologist.py --use-master-admin-password`
+---
 
-1. Install the ffmpeg build linked ([here for windows](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z), ensure it is the build ran with the `--full-shared` flag, check `ffmpeg -version` to confirm proper version/build), extract it locally somewhere, and ensure that you have the bin directory set in your sys.PATH. If in doubt, dump ffmpeg folder and all its contents as is in the project root.
+### 4. Install ffmpeg
 
+Download the [ffmpeg full-shared build for Windows](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z), extract it, and add its `bin/` directory to your system `PATH`.
 
-## DEBUG
-1. In VSCode, make sure you have proper the proper venv python interpreter selected. Ctrl-Shift-P -> type "interpreter" -> select "Python: Select Interpreter" -> select "Python 3.12.12 (projectname) .\.venv\Scripts\python.exe" (should be recommended)
+If you're unsure about PATH configuration, you can place the extracted ffmpeg folder directly in the project root as a fallback.
 
-2. Open the `main.py` file, press **F5** to start debugging -> select "Active Python File"
+Verify your install:
 
+```bash
+ffmpeg -version
+```
 
-## To run program from CLI:\
-1. In project_root, run:
-`uv run python main.py`
+---
 
-1.
-1.
-1.
+### 5. Install Dependencies
+
+In the project root, run:
+
+```bash
+uv sync --extra local-llm
+```
+
+> This may take a while — the final package in particular is large.
+
+---
+
+### 6. Bootstrap the App
+
+Run the following one-time setup script:
+
+```bash
+uv run python scripts/create_psychologist.py --use-master-admin-password
+```
+
+---
+
+## Running the App
+
+From the project root:
+
+```bash
+uv run python main.py
+```
+
+**Admin password:** `STAT405_ADMIN`
+
+---
+
+## Debugging in VSCode
+
+1. Open the project in VSCode
+2. Select the correct Python interpreter:
+   - Press `Ctrl+Shift+P` → type `interpreter` → select **Python: Select Interpreter**
+   - Choose `Python 3.12.12 (projectname) .\.venv\Scripts\python.exe` (should appear as recommended)
+3. Open `main.py`
+4. Press **F5** → select **Active Python File**
+
+---
+
+## Quick Reference
+
+| Step | Command |
+|------|---------|
+| Clone repo | `git clone --depth=1 https://github.com/verdande2/STAT405_AudioNotetaker.git` |
+| Install deps | `uv sync --extra local-llm` |
+| Bootstrap | `uv run python scripts/create_psychologist.py --use-master-admin-password` |
+| Run app | `uv run python main.py` |
+| Admin password | `STAT405_ADMIN` |
